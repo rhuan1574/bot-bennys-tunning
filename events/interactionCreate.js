@@ -219,7 +219,7 @@ module.exports = {
         const selectMenu = new StringSelectMenuBuilder()
           .setCustomId(interaction.id)
           .setMinValues(1)
-          .setMinValues(6)
+          .setMaxValues(6)
           .addOptions(
             tunagem.map((tunagem) =>
               new StringSelectMenuOptionBuilder()
