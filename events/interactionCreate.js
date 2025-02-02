@@ -221,7 +221,8 @@ module.exports = {
             .setStyle(ButtonStyle.Success)
             .setEmoji('✅')
     
-        const rowSelect = new ActionRowBuilder().addComponents(selectMenu, buttonConfirma);
+        const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
+        const rowBotton = new ActionRowBuilder().addComponents(buttonConfirma);
     
         let selectedServices = []; // Lista para armazenar as seleções do usuário
     
@@ -233,7 +234,7 @@ module.exports = {
         // Enviar a mensagem inicial com a embed e o menu de seleção
         await interaction.reply({
             embeds: [embed],
-            components: [rowSelect],
+            components: [rowSelect, rowBotton],
             ephemeral: true,
         });
     
