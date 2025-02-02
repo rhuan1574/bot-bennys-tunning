@@ -222,19 +222,19 @@ module.exports = {
         .setStyle(ButtonStyle.Success)
 
         const button6 = new ButtonBuilder()
-        .setLabel("Transmissão 1 🔧")
+        .setLabel("Transmissão 1 ⚙️ ")
         .setCustomId('transmissao_1')
-        .setStyle(ButtonStyle.Success)
+        .setStyle(ButtonStyle.Danger)
 
         const button7 = new ButtonBuilder()
-        .setLabel("Motor 1 🔧")
+        .setLabel('Transmissão 2 ⚙️ ')
         .setCustomId('transmissao_2')
-        .setStyle(ButtonStyle.Success)
+        .setStyle(ButtonStyle.Danger)
 
         const button8 = new ButtonBuilder()
-        .setLabel("Motor 1 🔧")
+        .setLabel("transmissão 3 ⚙️")
         .setCustomId('transmissao_3')
-        .setStyle(ButtonStyle.Success)
+        .setStyle(ButtonStyle.Danger)
 
         const rowButton = new ActionRowBuilder().addComponents(button1, button2, button3, button4)
         const rowButton2 = new ActionRowBuilder().addComponents(button6, button7, button8)
