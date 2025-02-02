@@ -296,9 +296,9 @@ module.exports = {
         await interaction.followUp({ content: "Envie uma imagem neste canal." });
     
         // Filtro para capturar mensagens com anexos de imagem OU embeds com imagens
-        const filter = (m) =>
-            m.attachments.size > 0 ||
-            (m.embeds.length > 0 && m.embeds.some(embed => embed.image || embed.thumbnail));
+        const filter = (m) => 
+          m.author.id === interaction.user.id && // Apenas o usuário original
+          (m.attachments.size > 0 || m.embeds.some(embed => embed.image || embed.thumbnail));
     
         // Criando o coletor (expira em 30 segundos)
         const collector = interaction.channel.createMessageCollector({ filter, time: 30_000 });
