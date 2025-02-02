@@ -173,77 +173,65 @@ module.exports = {
       }
 
       if (customId === "recibo") {
-        const selectedServices = new Map();
-        const services = {
-          motor_1: "Motor 1 🔧",
-          motor_2: "Motor 2 🔧",
-          motor_3: "Motor 3 🔧",
-          motor_4: "Motor 4 🔧",
-          transmissao_1: "Transmissão 1 ⚙️",
-          transmissao_2: "Transmissão 2 ⚙️",
-          transmissao_3: "Transmissão 3 ⚙️",
-        };
-        const buttons = Object.keys(services).map((service) =>
-          new ButtonBuilder()
-            .setLabel(services[service])
-            .setCustomId(service)
-            .setStyle(
-              service.includes("transmissao")
-                ? ButtonStyle.Danger
-                : ButtonStyle.Success
-            )
-        );
-
-        const row1 = new ActionRowBuilder().addComponents(buttons.slice(0, 4));
-        const row2 = new ActionRowBuilder().addComponents(buttons.slice(4));
-
-        const embed = new EmbedBuilder()
-          .setTitle("Serviços Selecionados")
-          .setDescription("Nenhum serviço selecionado ainda.")
-          .setColor("#0099ff");
-
-        const message = await interaction.reply({
-          content: "Selecione os serviços feitos:",
-          components: [row1, row2],
-          embeds: [embed],
-          ephemeral: true,
-        });
-
-        const collector = message.createMessageComponentCollector({
-          time: 60000,
-        });
-
-        collector.on("collect", async (i) => {
-          if (!services[i.customId]) return;
-
-          if (selectedServices.has(i.user.id)) {
-            const userSelections = selectedServices.get(i.user.id);
-            if (userSelections.includes(services[i.customId])) {
-              userSelections.splice(
-                userSelections.indexOf(services[i.customId]),
-                1
-              );
-            } else {
-              userSelections.push(services[i.customId]);
-            }
-            selectedServices.set(i.user.id, userSelections);
-          } else {
-            selectedServices.set(i.user.id, [services[i.customId]]);
-          }
-
-          const updatedSelections = selectedServices.get(i.user.id);
-          embed.setDescription(
-            updatedSelections.length
-              ? updatedSelections.join("\n")
-              : "Nenhum serviço selecionado ainda."
+        if (customId === "recibo") {
+          const services = {
+              motor_1: "Motor 1 🔧",
+              motor_2: "Motor 2 🔧",
+              motor_3: "Motor 3 🔧",
+              motor_4: "Motor 4 🔧",
+              transmissao_1: "Transmissão 1 ⚙️",
+              transmissao_2: "Transmissão 2 ⚙️",
+              transmissao_3: "Transmissão 3 ⚙️",
+          };
+      
+          const selectedServices = new Map(); // Adicionando o Map() para armazenar seleções por usuário
+      
+          const buttons = Object.keys(services).map(service =>
+              new ButtonBuilder()
+                  .setLabel(services[service])
+                  .setCustomId(service)
+                  .setStyle(service.includes("transmissao") ? ButtonStyle.Danger : ButtonStyle.Success)
           );
-
-          await i.update({ embeds: [embed] });
-        });
-
-        collector.on("end", () => {
-          message.edit({ components: [] });
-        });
+      
+          const row1 = new ActionRowBuilder().addComponents(buttons.slice(0, 4));
+          const row2 = new ActionRowBuilder().addComponents(buttons.slice(4));
+      
+          const embed = new EmbedBuilder()
+              .setTitle("Serviços Selecionados")
+              .setDescription("Nenhum serviço selecionado ainda.")
+              .setColor("#0099ff");
+      
+          const message = await interaction.reply({
+              content: "Selecione os serviços feitos:",
+              components: [row1, row2],
+              embeds: [embed],
+              ephemeral: true,
+          });
+      
+          const collector = message.createMessageComponentCollector({ time: 60000 });
+      
+          collector.on("collect", async (i) => {
+              if (!services[i.customId]) return;
+      
+              const userId = i.user.id;
+              const userSelections = selectedServices.get(userId) || [];
+      
+              if (userSelections.includes(services[i.customId])) {
+                  userSelections.splice(userSelections.indexOf(services[i.customId]), 1);
+              } else {
+                  userSelections.push(services[i.customId]);
+              }
+      
+              selectedServices.set(userId, userSelections);
+      
+              embed.setDescription(userSelections.length ? userSelections.join("\n") : "Nenhum serviço selecionado ainda.");
+      
+              await i.update({ embeds: [embed] });
+          });
+      
+          collector.on("end", () => {
+              message.edit({ components: [] });
+          })
       } else if (customId === "users") {
         // Obtendo os valores selecionados
         const selectedValues = interaction.values;
