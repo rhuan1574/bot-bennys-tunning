@@ -176,84 +176,67 @@ module.exports = {
 
       if (customId === "recibo") {
         const tunagem = [
-          {
-            label: "Motor 1",
-            description: "Motor Nível 1",
-            value: "motor_1",
-          },
-          {
-            label: "Motor 2",
-            description: "Motor Nível 2",
-            value: "motor_2",
-          },
-          {
-            label: "Motor 3",
-            description: "Motor Nível 3",
-            value: "motor_3",
-          },
-          {
-            label: "Motor 4",
-            description: "Motor Nível 4",
-            value: "motor_4",
-          },
-          {
-            label: "Transmissão 1",
-            description: "Transmissão Nível 1",
-            value: "transmissao_1",
-          },
-          {
-            label: "Transmissão 2",
-            description: "Transmissão Nível 2",
-            value: "transmissao_2",
-          },
-          {
-            label: "Transmissão 3",
-            description: "Transmissão Nível 3",
-            value: "transmissao_3",
-          },
-          {
-            label: "Transmissão 4",
-            description: "Transmissão Nível 4",
-            value: "transmissao_4",
-          },
+            { label: "Motor 1", description: "Motor Nível 1", value: "motor_1" },
+            { label: "Motor 2", description: "Motor Nível 2", value: "motor_2" },
+            { label: "Motor 3", description: "Motor Nível 3", value: "motor_3" },
+            { label: "Motor 4", description: "Motor Nível 4", value: "motor_4" },
+            { label: "Transmissão 1", description: "Transmissão Nível 1", value: "transmissao_1" },
+            { label: "Transmissão 2", description: "Transmissão Nível 2", value: "transmissao_2" },
+            { label: "Transmissão 3", description: "Transmissão Nível 3", value: "transmissao_3" },
+            { label: "Transmissão 4", description: "Transmissão Nível 4", value: "transmissao_4" },
         ];
+    
         const selectMenu = new StringSelectMenuBuilder()
-          .setCustomId(interaction.id)
-          .setMinValues(1)
-          .setMaxValues(6)
-          .addOptions(
-            tunagem.map((tunagem) =>
-              new StringSelectMenuOptionBuilder()
-                .setLabel(tunagem.label)
-                .setDescription(tunagem.description)
-                .setValue(tunagem.value)
-            )
-          );
-
-          const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
-
-         const reply = await interaction.reply({
+            .setCustomId(interaction.id)
+            .setMinValues(1)
+            .setMaxValues(6)
+            .setPlaceholder("Selecione até 6 serviços...")
+            .addOptions(tunagem.map(tunagem =>
+                new StringSelectMenuOptionBuilder()
+                    .setLabel(tunagem.label)
+                    .setDescription(tunagem.description)
+                    .setValue(tunagem.value)
+            ));
+    
+        const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
+    
+        const embed = new EmbedBuilder()
+            .setTitle("Serviços Selecionados")
+            .setDescription("Nenhum serviço selecionado ainda.")
+            .setColor("#0099ff");
+    
+        const reply = await interaction.reply({
             content: "Selecione os serviços feitos:",
             components: [rowSelect],
+            embeds: [embed],
             ephemeral: true
-          });
-
-          const collector = reply.createMessageComponentCollector({
+        });
+    
+        const collector = reply.createMessageComponentCollector({
             componentType: ComponentType.StringSelect,
             filter: (i) => i.user.id === interaction.user.id && i.customId === interaction.id,
             time: 60_000,
-          })
-
-          collector.on('collect', (interaction) => {
-            console.log(interaction.values);
-          })
-      } else if (customId === "refazer") {
-        await interaction.reply({
-          content: "🔄 Por favor, refaça sua seleção.",
-          flags: 64,
         });
-      }
+    
+        collector.on('collect', async (i) => {
+            const selectedServices = i.values.map(value => {
+                const service = tunagem.find(t => t.value === value);
+                return `✅ ${service.label} - ${service.description}`;
+            });
+    
+            embed.setDescription(selectedServices.join("\n"));
+    
+            await i.update({
+                embeds: [embed],
+                components: [rowSelect],
+            });
+        });
+    
+        collector.on("end", () => {
+            reply.edit({ components: [] });
+        });
     }
+  }
 
     // Processa modais
     if (interaction.isModalSubmit()) {
