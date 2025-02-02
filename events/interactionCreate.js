@@ -173,7 +173,6 @@ module.exports = {
       }
 
       if (customId === "recibo") {
-        if (customId === "recibo") {
           const services = {
               motor_1: "Motor 1 🔧",
               motor_2: "Motor 2 🔧",
