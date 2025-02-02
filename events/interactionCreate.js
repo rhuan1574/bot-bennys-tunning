@@ -240,7 +240,7 @@ module.exports = {
         if (!selectedValues.length) {
           return await interaction.reply({
             content: "❌ Você não selecionou nenhum item.",
-            ephemeral: true,
+            flags: 64
           });
         }
       
@@ -302,7 +302,7 @@ module.exports = {
         await interaction.reply({
           content: "✅ Sua seleção foi confirmada!",
           embeds: [embedConfirmar],
-          ephemeral: true,
+          flags: 64
         });
       
         // Remove os dados do usuário para evitar interferências futuras
@@ -311,7 +311,7 @@ module.exports = {
       } else if (customId === "refazer") {
         await interaction.reply({
           content: "🔄 Por favor, refaça sua seleção.",
-          ephemeral: true,
+          flags:64
         });
       }
     }
