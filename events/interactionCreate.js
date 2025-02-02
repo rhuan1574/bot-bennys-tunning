@@ -12,6 +12,7 @@ const {
   ButtonStyle,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
+  ComponentType,
 } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
@@ -231,9 +232,20 @@ module.exports = {
 
           const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
 
-          interaction.reply({
+         const reply = await interaction.reply({
             content: "Selecione os serviços feitos:",
-            components: [rowSelect]
+            components: [rowSelect],
+            ephemeral: true
+          });
+
+          const collector = reply.createMessageComponentCollector({
+            componentType: ComponentType.StringSelect,
+            filter: (i) => i.user.id === interaction.user.id && i.customId === interaction.id,
+            time: 60_000,
+          })
+
+          collector.on('collect', (interaction) => {
+            console.log(interaction.values);
           })
       } else if (customId === "refazer") {
         await interaction.reply({
