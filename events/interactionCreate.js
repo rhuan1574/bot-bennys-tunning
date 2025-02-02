@@ -288,11 +288,11 @@ module.exports = {
       }
       if (customId === "enviar_imagem") {
         if (!interaction.channel) {
-            return interaction.reply({ content: "Erro: Não consigo acessar este canal.", ephemeral: true });
+            return interaction.reply({ content: "Erro: Não consigo acessar este canal."});
         }
     
         // Defer para evitar erro de timeout
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({  });
     
         // Pedir ao usuário para enviar a imagem
         await interaction.followUp({ content: "Envie uma imagem neste canal." });
