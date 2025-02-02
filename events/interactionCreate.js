@@ -10,12 +10,13 @@ const {
   WebhookClient,
   ButtonBuilder,
   ButtonStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
 } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 const { webhookId, webhookToken, tagMembers } = require("../config.json");
 const webhookClient = new WebhookClient({ id: webhookId, token: webhookToken });
-
 
 // Caminho para o arquivo JSON que armazenará os canais criados
 const CHANNELS_FILE = path.resolve(__dirname, "channels.json");
@@ -173,113 +174,52 @@ module.exports = {
       }
 
       if (customId === "recibo") {
-          const services = {
-              motor_1: "Motor 1 🔧",
-              motor_2: "Motor 2 🔧",
-              motor_3: "Motor 3 🔧",
-              motor_4: "Motor 4 🔧",
-              transmissao_1: "Transmissão 1 ⚙️",
-              transmissao_2: "Transmissão 2 ⚙️",
-              transmissao_3: "Transmissão 3 ⚙️",
-          };
-      
-          const selectedServices = new Map(); // Adicionando o Map() para armazenar seleções por usuário
-      
-          const buttons = Object.keys(services).map(service =>
-              new ButtonBuilder()
-                  .setLabel(services[service])
-                  .setCustomId(service)
-                  .setStyle(service.includes("transmissao") ? ButtonStyle.Danger : ButtonStyle.Success)
+        const tunagem = [
+          {
+            label: "Motor 1",
+            description: "Motor Nível 1",
+            value: "motor_1",
+          },
+          {
+            label: "Motor 1",
+            description: "Motor Nível 1",
+            value: "motor_1",
+          },
+          {
+            label: "Motor 2",
+            description: "Motor Nível 2",
+            value: "motor_2",
+          },
+          {
+            label: "Motor 3",
+            description: "Motor Nível 3",
+            value: "motor_3",
+          },
+          {
+            label: "Motor 4",
+            description: "Motor Nível 4",
+            value: "motor_4",
+          },
+        ];
+        const selectMenu = new StringSelectMenuBuilder()
+          .setCustomId(interaction.id)
+          .setMinValues(1)
+          .setMinValues(6)
+          .addOptions(
+            tunagem.map((tunagem) =>
+              new StringSelectMenuOptionBuilder()
+                .setLabel(tunagem.label)
+                .setDescription(tunagem.description)
+                .setValue(tunagem.value)
+            )
           );
-      
-          const row1 = new ActionRowBuilder().addComponents(buttons.slice(0, 4));
-          const row2 = new ActionRowBuilder().addComponents(buttons.slice(4));
-      
-          const embed = new EmbedBuilder()
-              .setTitle("Serviços Selecionados")
-              .setDescription("Nenhum serviço selecionado ainda.")
-              .setColor("#0099ff");
-      
-          const message = await interaction.reply({
-              content: "Selecione os serviços feitos:",
-              components: [row1, row2],
-              embeds: [embed],
-              ephemeral: true,
-          });
-      
-          const collector = message.createMessageComponentCollector({ time: 60000 });
-      
-          collector.on("collect", async (i) => {
-              if (!services[i.customId]) return;
-      
-              const userId = i.user.id;
-              const userSelections = selectedServices.get(userId) || [];
-      
-              if (userSelections.includes(services[i.customId])) {
-                  userSelections.splice(userSelections.indexOf(services[i.customId]), 1);
-              } else {
-                  userSelections.push(services[i.customId]);
-              }
-      
-              selectedServices.set(userId, userSelections);
-      
-              embed.setDescription(userSelections.length ? userSelections.join("\n") : "Nenhum serviço selecionado ainda.");
-      
-              await i.update({ embeds: [embed] });
-          });
-      
-          collector.on("end", () => {
-              message.edit({ components: [] });
+
+          const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
+
+          interaction.reply({
+            content: "Selecione os serviços feitos:",
+            components: [rowSelect]
           })
-      } else if (customId === "users") {
-        // Obtendo os valores selecionados
-        const selectedValues = interaction.values;
-
-        if (!selectedValues.length) {
-          return await interaction.reply({
-            content: "❌ Você não selecionou nenhum item.",
-            flags: 64,
-          });
-        }
-
-        // Função para mapear valores para descrições (substitua por sua lógica)
-        const getItemLabel = (value) => {
-          const responseMessages = {
-            motor_1: "Motor Nível 1",
-            motor_2: "Motor Nível 2",
-            motor_3: "Motor Nível 3",
-            motor_4: "Motor Nível 4",
-            transmissao_1: "Transmissão Nível 1",
-            transmissao_2: "Transmissão Nível 2",
-            transmissao_3: "Transmissão Nível 3",
-            freio_1: "Freio Nível 1",
-            freio_2: "Freio Nível 2",
-            freio_3: "Freio Nível 3",
-            turbo: "Turbo",
-            suspensao_1: "Suspensão Nível 1",
-            suspensao_2: "Suspensão Nível 2",
-            suspensao_3: "Suspensão Nível 3",
-            suspensao_4: "Suspensão Nível 4",
-            suspensao_5: "Suspensão Nível 5",
-            blindagem_20: "Blindagem 20%",
-            blindagem_40: "Blindagem 40%",
-            blindagem_60: "Blindagem 60%",
-            blindagem_80: "Blindagem 80%",
-            blindagem_100: "Blindagem 100%",
-          };
-          return responseMessages[value] || value; // Retorna a descrição ou o valor original
-        };
-
-        const selectedItems = selectedValues.map(getItemLabel).join("\n• ");
-
-        // Armazena os itens apenas para o usuário específico
-        interaction.client.selectedItems[interaction.user.id] = selectedItems;
-
-        await interaction.update({
-          content: `✅ Você selecionou:\n• ${selectedItems}`,
-          components: [], // Remove os componentes para evitar interações repetidas
-        });
-      } else if (customId === "confirmar") {
       } else if (customId === "refazer") {
         await interaction.reply({
           content: "🔄 Por favor, refaça sua seleção.",
