@@ -1,4 +1,3 @@
-const { log } = require("console");
 const {
   Events,
   MessageFlags,
@@ -8,8 +7,6 @@ const {
   ActionRowBuilder,
   EmbedBuilder,
   WebhookClient,
-  ButtonBuilder,
-  ButtonStyle,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   ComponentType,
