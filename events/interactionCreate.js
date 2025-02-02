@@ -16,7 +16,7 @@ const path = require("path");
 const { webhookId, webhookToken, tagMembers } = require("../config.json");
 const webhookClient = new WebhookClient({ id: webhookId, token: webhookToken });
 
-
+const selectedServices = new Map();
 // Caminho para o arquivo JSON que armazenará os canais criados
 const CHANNELS_FILE = path.resolve(__dirname, "channels.json");
 
@@ -167,67 +167,93 @@ module.exports = {
       } else if (!interaction.client.selectedItems) {
         interaction.client.selectedItems = {};
       }
-      
+
       if (!interaction.client.selectedItems) {
         interaction.client.selectedItems = {};
       }
-      
+
       if (customId === "recibo") {
-        const button1 = new ButtonBuilder()
-        .setLabel("Motor 1 🔧")
-        .setCustomId('motor_1')
-        .setStyle(ButtonStyle.Success)
+        const services = {
+          motor_1: "Motor 1 🔧",
+          motor_2: "Motor 2 🔧",
+          motor_3: "Motor 3 🔧",
+          motor_4: "Motor 4 🔧",
+          transmissao_1: "Transmissão 1 ⚙️",
+          transmissao_2: "Transmissão 2 ⚙️",
+          transmissao_3: "Transmissão 3 ⚙️",
+        };
+        const buttons = Object.keys(services).map((service) =>
+          new ButtonBuilder()
+            .setLabel(services[service])
+            .setCustomId(service)
+            .setStyle(
+              service.includes("transmissao")
+                ? ButtonStyle.Danger
+                : ButtonStyle.Success
+            )
+        );
 
-        const button2 = new ButtonBuilder()
-        .setLabel("Motor 2 🔧")
-        .setCustomId('motor_2')
-        .setStyle(ButtonStyle.Success)
+        const row1 = new ActionRowBuilder().addComponents(buttons.slice(0, 4));
+        const row2 = new ActionRowBuilder().addComponents(buttons.slice(4));
 
-        const button3 = new ButtonBuilder()
-        .setLabel("Motor 3 🔧")
-        .setCustomId('motor_3')
-        .setStyle(ButtonStyle.Success)
+        const embed = new EmbedBuilder()
+          .setTitle("Serviços Selecionados")
+          .setDescription("Nenhum serviço selecionado ainda.")
+          .setColor("#0099ff");
 
-        const button4 = new ButtonBuilder()
-        .setLabel("Motor 4 🔧")
-        .setCustomId('motor_4')
-        .setStyle(ButtonStyle.Success)
+        const message = await interaction.reply({
+          content: "Selecione os serviços feitos:",
+          components: [row1, row2],
+          embeds: [embed],
+          ephemeral: true,
+        });
 
-        const button6 = new ButtonBuilder()
-        .setLabel("Transmissão 1 ⚙️ ")
-        .setCustomId('transmissao_1')
-        .setStyle(ButtonStyle.Danger)
+        const collector = message.createMessageComponentCollector({
+          time: 60000,
+        });
 
-        const button7 = new ButtonBuilder()
-        .setLabel('Transmissão 2 ⚙️ ')
-        .setCustomId('transmissao_2')
-        .setStyle(ButtonStyle.Danger)
+        collector.on("collect", async (i) => {
+          if (!services[i.customId]) return;
 
-        const button8 = new ButtonBuilder()
-        .setLabel("transmissão 3 ⚙️")
-        .setCustomId('transmissao_3')
-        .setStyle(ButtonStyle.Danger)
+          if (selectedServices.has(i.user.id)) {
+            const userSelections = selectedServices.get(i.user.id);
+            if (userSelections.includes(services[i.customId])) {
+              userSelections.splice(
+                userSelections.indexOf(services[i.customId]),
+                1
+              );
+            } else {
+              userSelections.push(services[i.customId]);
+            }
+            selectedServices.set(i.user.id, userSelections);
+          } else {
+            selectedServices.set(i.user.id, [services[i.customId]]);
+          }
 
-        const rowButton = new ActionRowBuilder().addComponents(button1, button2, button3, button4)
-        const rowButton2 = new ActionRowBuilder().addComponents(button6, button7, button8)
+          const updatedSelections = selectedServices.get(i.user.id);
+          embed.setDescription(
+            updatedSelections.length
+              ? updatedSelections.join("\n")
+              : "Nenhum serviço selecionado ainda."
+          );
 
-        interaction.reply({
-          content: 'Selecione os serviços feitos:',
-          components: [rowButton,rowButton2],
-          flags: 64
-        })
+          await i.update({ embeds: [embed] });
+        });
 
+        collector.on("end", () => {
+          message.edit({ components: [] });
+        });
       } else if (customId === "users") {
         // Obtendo os valores selecionados
         const selectedValues = interaction.values;
-      
+
         if (!selectedValues.length) {
           return await interaction.reply({
             content: "❌ Você não selecionou nenhum item.",
-            flags: 64
+            flags: 64,
           });
         }
-      
+
         // Função para mapear valores para descrições (substitua por sua lógica)
         const getItemLabel = (value) => {
           const responseMessages = {
@@ -255,47 +281,21 @@ module.exports = {
           };
           return responseMessages[value] || value; // Retorna a descrição ou o valor original
         };
-      
+
         const selectedItems = selectedValues.map(getItemLabel).join("\n• ");
-        
+
         // Armazena os itens apenas para o usuário específico
         interaction.client.selectedItems[interaction.user.id] = selectedItems;
-      
+
         await interaction.update({
           content: `✅ Você selecionou:\n• ${selectedItems}`,
           components: [], // Remove os componentes para evitar interações repetidas
         });
-      
       } else if (customId === "confirmar") {
-        // Recupera os itens selecionados do armazenamento global
-        const selectedItems =
-          interaction.client.selectedItems[interaction.user.id] ||
-          "Nenhum serviço foi selecionado.";
-      
-        const membroTunagem =
-          interaction.guild.members.cache.get(interaction.user.id)?.displayName || "Desconhecido";
-      
-        const embedConfirmar = new EmbedBuilder()
-          .setTitle("✅ Serviço realizado:")
-          .setColor("Green")
-          .addFields(
-            { name: "🔧 Serviços concluídos:", value: selectedItems },
-            { name: "👨‍🔧 Tunagem feita por:", value: membroTunagem }
-          );
-      
-        await interaction.reply({
-          content: "✅ Sua seleção foi confirmada!",
-          embeds: [embedConfirmar],
-          flags: 64
-        });
-      
-        // Remove os dados do usuário para evitar interferências futuras
-        delete interaction.client.selectedItems[interaction.user.id];
-      
       } else if (customId === "refazer") {
         await interaction.reply({
           content: "🔄 Por favor, refaça sua seleção.",
-          flags:64
+          flags: 64,
         });
       }
     }
