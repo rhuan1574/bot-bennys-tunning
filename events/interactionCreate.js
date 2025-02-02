@@ -273,278 +273,283 @@ module.exports = {
           ephemeral: true,
         });
       }
-    }
 
-    if (customId === "users") {
-      // Obtendo os valores selecionados
-      const selectedValues = interaction.values;
+      if (customId === "users") {
+        // Obtendo os valores selecionados
+        const selectedValues = interaction.values;
 
-      if (!selectedValues.length) {
-        return await interaction.reply({
-          content: "❌ Você não selecionou nenhum item.",
+        if (!selectedValues.length) {
+          return await interaction.reply({
+            content: "❌ Você não selecionou nenhum item.",
+            flags: 64,
+          });
+        }
+
+        // Função para mapear valores para descrições (substitua por sua lógica)
+        const getItemLabel = (value) => {
+          const responseMessages = {
+            motor_1: "Motor Nível 1",
+            motor_2: "Motor Nível 2",
+            motor_3: "Motor Nível 3",
+            motor_4: "Motor Nível 4",
+            transmissao_1: "Transmissão Nível 1",
+            transmissao_2: "Transmissão Nível 2",
+            transmissao_3: "Transmissão Nível 3",
+            freio_1: "Freio Nível 1",
+            freio_2: "Freio Nível 2",
+            freio_3: "Freio Nível 3",
+            turbo: "Turbo",
+            suspensao_1: "Suspensão Nível 1",
+            suspensao_2: "Suspensão Nível 2",
+            suspensao_3: "Suspensão Nível 3",
+            suspensao_4: "Suspensão Nível 4",
+            suspensao_5: "Suspensão Nível 5",
+            blindagem_20: "Blindagem 20%",
+            blindagem_40: "Blindagem 40%",
+            blindagem_60: "Blindagem 60%",
+            blindagem_80: "Blindagem 80%",
+            blindagem_100: "Blindagem 100%",
+          };
+          return responseMessages[value] || value; // Retorna a descrição ou o valor original
+        };
+
+        const selectedItems = selectedValues.map(getItemLabel).join("\n• ");
+
+        // Armazena os itens apenas para o usuário específico
+        interaction.client.selectedItems[interaction.user.id] = selectedItems;
+
+        await interaction.update({
+          content: `✅ Você selecionou:\n• ${selectedItems}`,
+          components: [], // Remove os componentes para evitar interações repetidas
+        });
+      } else if (customId === "confirmar") {
+        // Recupera os itens selecionados do armazenamento global
+        const selectedItems =
+          interaction.client.selectedItems[interaction.user.id] ||
+          "Nenhum serviço foi selecionado.";
+
+        const membroTunagem =
+          interaction.guild.members.cache.get(interaction.user.id)
+            ?.displayName || "Desconhecido";
+
+        const embedConfirmar = new EmbedBuilder()
+          .setTitle("✅ Serviço realizado:")
+          .setColor("Green")
+          .addFields(
+            { name: "🔧 Serviços concluídos:", value: selectedItems },
+            { name: "👨‍🔧 Tunagem feita por:", value: membroTunagem }
+          );
+
+        await interaction.reply({
+          content: "✅ Sua seleção foi confirmada!",
+          embeds: [embedConfirmar],
+          flags: 64,
+        });
+
+        // Remove os dados do usuário para evitar interferências futuras
+        delete interaction.client.selectedItems[interaction.user.id];
+      } else if (customId === "refazer") {
+        await interaction.reply({
+          content: "🔄 Por favor, refaça sua seleção.",
           flags: 64,
         });
       }
+    }
 
-      // Função para mapear valores para descrições (substitua por sua lógica)
-      const getItemLabel = (value) => {
-        const responseMessages = {
-          motor_1: "Motor Nível 1",
-          motor_2: "Motor Nível 2",
-          motor_3: "Motor Nível 3",
-          motor_4: "Motor Nível 4",
-          transmissao_1: "Transmissão Nível 1",
-          transmissao_2: "Transmissão Nível 2",
-          transmissao_3: "Transmissão Nível 3",
-          freio_1: "Freio Nível 1",
-          freio_2: "Freio Nível 2",
-          freio_3: "Freio Nível 3",
-          turbo: "Turbo",
-          suspensao_1: "Suspensão Nível 1",
-          suspensao_2: "Suspensão Nível 2",
-          suspensao_3: "Suspensão Nível 3",
-          suspensao_4: "Suspensão Nível 4",
-          suspensao_5: "Suspensão Nível 5",
-          blindagem_20: "Blindagem 20%",
-          blindagem_40: "Blindagem 40%",
-          blindagem_60: "Blindagem 60%",
-          blindagem_80: "Blindagem 80%",
-          blindagem_100: "Blindagem 100%",
-        };
-        return responseMessages[value] || value; // Retorna a descrição ou o valor original
-      };
+    // Processa modais
+    if (interaction.isModalSubmit()) {
+      const { customId } = interaction;
 
-      const selectedItems = selectedValues.map(getItemLabel).join("\n• ");
+      if (customId === "modal-canal") {
+        const nomeCanal = interaction.fields.getTextInputValue("nome_canal");
+        const guild = interaction.guild;
 
-      // Armazena os itens apenas para o usuário específico
-      interaction.client.selectedItems[interaction.user.id] = selectedItems;
+        if (!guild) {
+          await interaction.reply({
+            content:
+              "Não foi possível criar o canal porque o servidor não foi identificado.",
+            flags: 64,
+          });
+          return;
+        }
 
-      await interaction.update({
-        content: `✅ Você selecionou:\n• ${selectedItems}`,
-        components: [], // Remove os componentes para evitar interações repetidas
-      });
-    } else if (customId === "confirmar") {
-      // Recupera os itens selecionados do armazenamento global
-      const selectedItems =
-        interaction.client.selectedItems[interaction.user.id] ||
-        "Nenhum serviço foi selecionado.";
+        const categoryId = "1324201838190399488"; // Substitua pelo ID da sua categoria
+        const category = guild.channels.cache.get(categoryId);
 
-      const membroTunagem =
-        interaction.guild.members.cache.get(interaction.user.id)?.displayName ||
-        "Desconhecido";
+        if (!category) {
+          await interaction.reply({
+            content: "❌ Não foi possível encontrar a categoria especificada.",
+            flags: 64,
+          });
+          return;
+        }
 
-      const embedConfirmar = new EmbedBuilder()
-        .setTitle("✅ Serviço realizado:")
-        .setColor("Green")
-        .addFields(
-          { name: "🔧 Serviços concluídos:", value: selectedItems },
-          { name: "👨‍🔧 Tunagem feita por:", value: membroTunagem }
+        try {
+          const existingChannel = guild.channels.cache.find(
+            (channel) => channel.name === `📁・${nomeCanal}`
+          );
+
+          if (existingChannel) {
+            createdChannels[interaction.user.id] = existingChannel.id;
+            saveChannels(createdChannels);
+            await interaction.reply({
+              content: `📁 O canal "${existingChannel.name}" já existe.`,
+              flags: 64,
+            });
+            return;
+          }
+
+          const canal = await guild.channels.create({
+            name: `📁・farm-${nomeCanal}`,
+            type: 0,
+            topic: "Canal criado via interação de botão",
+            reason: `Solicitado por ${interaction.user.tag}`,
+            parent: category.id,
+            permissionOverwrites: [
+              {
+                id: interaction.user.id,
+                allow: ["ViewChannel", "SendMessages", "ReadMessageHistory"],
+              },
+              {
+                id: guild.roles.everyone.id,
+                deny: ["ViewChannel"],
+              },
+              {
+                id: guild.roles.cache.find(
+                  (role) => role.name === "🧰 | Gerente"
+                )?.id,
+                allow: ["ViewChannel", "SendMessages", "ReadMessageHistory"],
+              },
+            ],
+          });
+
+          createdChannels[interaction.user.id] = canal.id;
+          saveChannels(createdChannels);
+
+          await interaction.reply({
+            content: `📁 Canal "${canal.name}" criado com sucesso!`,
+            flags: 64,
+          });
+        } catch (error) {
+          console.error(error);
+          await interaction.reply({
+            content: "❌ Ocorreu um erro ao criar o canal.",
+            flags: 64,
+          });
+        }
+      } else if (customId === "modal_depositar") {
+        const inputs = ["ferro", "aluminio", "cobre", "borracha", "plastico"];
+        const values = inputs.map((input) => ({
+          name: input.charAt(0).toUpperCase() + input.slice(1),
+          value: interaction.fields.getTextInputValue(input),
+          inline: true,
+        }));
+
+        const userChannelId = createdChannels[interaction.user.id];
+
+        if (userChannelId) {
+          const canal = interaction.guild.channels.cache.get(userChannelId);
+
+          if (canal) {
+            const embed = new EmbedBuilder()
+              .setColor("#00FFFF")
+              .setTitle("📦 Itens Depositados")
+              .setDescription("Itens enviados com sucesso para o depósito.")
+              .addFields(values)
+              .setFooter({
+                text: `Depositado por ${interaction.user.tag}`,
+                iconURL: interaction.user.displayAvatarURL(),
+              })
+              .setTimestamp();
+
+            await canal.send({ embeds: [embed] });
+
+            await interaction.reply({
+              content: "✅ Itens depositados com sucesso no canal criado!",
+              flags: 64,
+            });
+          } else {
+            await interaction.reply({
+              content: "❌ Não foi possível encontrar o canal criado.",
+              flags: 64,
+            });
+          }
+        } else {
+          await interaction.reply({
+            content:
+              "❌ Nenhum canal associado à sua interação foi encontrado.",
+            flags: 64,
+          });
+        }
+      } else if (customId === "modal-registro") {
+        const nomeRegistro = interaction.fields.getTextInputValue("nome_prsn");
+        const nomeReal = interaction.fields.getTextInputValue("nome");
+        const nomeIndicacao =
+          interaction.fields.getTextInputValue("nome_indicacao");
+        const idRegistro = interaction.fields.getTextInputValue("id_prsn");
+
+        const membro = interaction.guild.members.cache.get(interaction.user.id);
+
+        if (membro) {
+          try {
+            await membro.setNickname(`${nomeRegistro} | ${idRegistro}`);
+            await interaction.reply({
+              content: `✅ O apelido foi atualizado para: ${nomeRegistro} | ${idRegistro} e recebeu o cargo de 🧰 | Membro Benny's`,
+              flags: 64,
+            });
+          } catch (error) {
+            console.error(error);
+            await interaction.reply({
+              content:
+                "❌ Não foi possível alterar o apelido. Verifique minhas permissões.",
+              flags: 64,
+            });
+          }
+        } else {
+          await interaction.reply({
+            content: "❌ Membro não encontrado no servidor.",
+            flags: 64,
+          });
+        }
+
+        const cargo = interaction.guild.roles.cache.find(
+          (role) => role.name === "🧰 | Membro Benny's"
         );
 
-      await interaction.reply({
-        content: "✅ Sua seleção foi confirmada!",
-        embeds: [embedConfirmar],
-        flags: 64,
-      });
+        if (cargo) {
+          try {
+            await membro.roles.add(cargo);
+          } catch (error) {
+            console.error(error);
+            await interaction.reply({
+              content: "❌ Não foi possível atribuir o cargo.",
+              flags: 64,
+            });
+          }
+        }
 
-      // Remove os dados do usuário para evitar interferências futuras
-      delete interaction.client.selectedItems[interaction.user.id];
-    } else if (customId === "refazer") {
-      await interaction.reply({
-        content: "🔄 Por favor, refaça sua seleção.",
-        flags: 64,
-      });
+        const embed = new EmbedBuilder()
+          .setColor("#FF0000")
+          .setTitle("Novo Registro de Usuário")
+          .setImage(
+            "https://i.ibb.co/CBVRkXJ/BENNYS-TUNING-removebg-preview.png"
+          )
+          .addFields([
+            { name: "Nome do Personagem", value: nomeRegistro },
+            { name: "ID do Personagem", value: idRegistro },
+            { name: "Nome Real", value: nomeReal },
+            { name: "Nome de Indicação", value: nomeIndicacao },
+          ])
+          .setFooter({
+            text: `Registrado por ${interaction.user.tag}`,
+            iconURL: interaction.user.displayAvatarURL(),
+          });
+
+        webhookClient.send({
+          content: tagMembers ? `${membro} foi registrado!` : "",
+          embeds: [embed],
+        });
+      }
     }
   },
 };
-// Processa modais
-if (interaction.isModalSubmit()) {
-  const { customId } = interaction;
-
-  if (customId === "modal-canal") {
-    const nomeCanal = interaction.fields.getTextInputValue("nome_canal");
-    const guild = interaction.guild;
-
-    if (!guild) {
-      await interaction.reply({
-        content:
-          "Não foi possível criar o canal porque o servidor não foi identificado.",
-        flags: 64,
-      });
-      return;
-    }
-
-    const categoryId = "1324201838190399488"; // Substitua pelo ID da sua categoria
-    const category = guild.channels.cache.get(categoryId);
-
-    if (!category) {
-      await interaction.reply({
-        content: "❌ Não foi possível encontrar a categoria especificada.",
-        flags: 64,
-      });
-      return;
-    }
-
-    try {
-      const existingChannel = guild.channels.cache.find(
-        (channel) => channel.name === `📁・${nomeCanal}`
-      );
-
-      if (existingChannel) {
-        createdChannels[interaction.user.id] = existingChannel.id;
-        saveChannels(createdChannels);
-        await interaction.reply({
-          content: `📁 O canal "${existingChannel.name}" já existe.`,
-          flags: 64,
-        });
-        return;
-      }
-
-      const canal = await guild.channels.create({
-        name: `📁・farm-${nomeCanal}`,
-        type: 0,
-        topic: "Canal criado via interação de botão",
-        reason: `Solicitado por ${interaction.user.tag}`,
-        parent: category.id,
-        permissionOverwrites: [
-          {
-            id: interaction.user.id,
-            allow: ["ViewChannel", "SendMessages", "ReadMessageHistory"],
-          },
-          {
-            id: guild.roles.everyone.id,
-            deny: ["ViewChannel"],
-          },
-          {
-            id: guild.roles.cache.find((role) => role.name === "🧰 | Gerente")
-              ?.id,
-            allow: ["ViewChannel", "SendMessages", "ReadMessageHistory"],
-          },
-        ],
-      });
-
-      createdChannels[interaction.user.id] = canal.id;
-      saveChannels(createdChannels);
-
-      await interaction.reply({
-        content: `📁 Canal "${canal.name}" criado com sucesso!`,
-        flags: 64,
-      });
-    } catch (error) {
-      console.error(error);
-      await interaction.reply({
-        content: "❌ Ocorreu um erro ao criar o canal.",
-        flags: 64,
-      });
-    }
-  } else if (customId === "modal_depositar") {
-    const inputs = ["ferro", "aluminio", "cobre", "borracha", "plastico"];
-    const values = inputs.map((input) => ({
-      name: input.charAt(0).toUpperCase() + input.slice(1),
-      value: interaction.fields.getTextInputValue(input),
-      inline: true,
-    }));
-
-    const userChannelId = createdChannels[interaction.user.id];
-
-    if (userChannelId) {
-      const canal = interaction.guild.channels.cache.get(userChannelId);
-
-      if (canal) {
-        const embed = new EmbedBuilder()
-          .setColor("#00FFFF")
-          .setTitle("📦 Itens Depositados")
-          .setDescription("Itens enviados com sucesso para o depósito.")
-          .addFields(values)
-          .setFooter({
-            text: `Depositado por ${interaction.user.tag}`,
-            iconURL: interaction.user.displayAvatarURL(),
-          })
-          .setTimestamp();
-
-        await canal.send({ embeds: [embed] });
-
-        await interaction.reply({
-          content: "✅ Itens depositados com sucesso no canal criado!",
-          flags: 64,
-        });
-      } else {
-        await interaction.reply({
-          content: "❌ Não foi possível encontrar o canal criado.",
-          flags: 64,
-        });
-      }
-    } else {
-      await interaction.reply({
-        content: "❌ Nenhum canal associado à sua interação foi encontrado.",
-        flags: 64,
-      });
-    }
-  } else if (customId === "modal-registro") {
-    const nomeRegistro = interaction.fields.getTextInputValue("nome_prsn");
-    const nomeReal = interaction.fields.getTextInputValue("nome");
-    const nomeIndicacao =
-      interaction.fields.getTextInputValue("nome_indicacao");
-    const idRegistro = interaction.fields.getTextInputValue("id_prsn");
-
-    const membro = interaction.guild.members.cache.get(interaction.user.id);
-
-    if (membro) {
-      try {
-        await membro.setNickname(`${nomeRegistro} | ${idRegistro}`);
-        await interaction.reply({
-          content: `✅ O apelido foi atualizado para: ${nomeRegistro} | ${idRegistro} e recebeu o cargo de 🧰 | Membro Benny's`,
-          flags: 64,
-        });
-      } catch (error) {
-        console.error(error);
-        await interaction.reply({
-          content:
-            "❌ Não foi possível alterar o apelido. Verifique minhas permissões.",
-          flags: 64,
-        });
-      }
-    } else {
-      await interaction.reply({
-        content: "❌ Membro não encontrado no servidor.",
-        flags: 64,
-      });
-    }
-
-    const cargo = interaction.guild.roles.cache.find(
-      (role) => role.name === "🧰 | Membro Benny's"
-    );
-
-    if (cargo) {
-      try {
-        await membro.roles.add(cargo);
-      } catch (error) {
-        console.error(error);
-        await interaction.reply({
-          content: "❌ Não foi possível atribuir o cargo.",
-          flags: 64,
-        });
-      }
-    }
-
-    const embed = new EmbedBuilder()
-      .setColor("#FF0000")
-      .setTitle("Novo Registro de Usuário")
-      .setImage("https://i.ibb.co/CBVRkXJ/BENNYS-TUNING-removebg-preview.png")
-      .addFields([
-        { name: "Nome do Personagem", value: nomeRegistro },
-        { name: "ID do Personagem", value: idRegistro },
-        { name: "Nome Real", value: nomeReal },
-        { name: "Nome de Indicação", value: nomeIndicacao },
-      ])
-      .setFooter({
-        text: `Registrado por ${interaction.user.tag}`,
-        iconURL: interaction.user.displayAvatarURL(),
-      });
-
-    webhookClient.send({
-      content: tagMembers ? `${membro} foi registrado!` : "",
-      embeds: [embed],
-    });
-  }
-}
