@@ -16,7 +16,7 @@ const path = require("path");
 const { webhookId, webhookToken, tagMembers } = require("../config.json");
 const webhookClient = new WebhookClient({ id: webhookId, token: webhookToken });
 
-const selectedServices = new Map();
+
 // Caminho para o arquivo JSON que armazenará os canais criados
 const CHANNELS_FILE = path.resolve(__dirname, "channels.json");
 
@@ -173,6 +173,7 @@ module.exports = {
       }
 
       if (customId === "recibo") {
+        const selectedServices = new Map();
         const services = {
           motor_1: "Motor 1 🔧",
           motor_2: "Motor 2 🔧",
