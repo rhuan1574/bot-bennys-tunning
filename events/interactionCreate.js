@@ -291,8 +291,11 @@ module.exports = {
             return interaction.reply({ content: "Erro: Não consigo acessar este canal.", ephemeral: true });
         }
     
-        // Pede para o usuário enviar a imagem
-        await interaction.reply({ content: "Envie uma imagem neste canal." });
+        // Defer para evitar erro de timeout
+        await interaction.deferReply({ ephemeral: true });
+    
+        // Pedir ao usuário para enviar a imagem
+        await interaction.followUp({ content: "Envie uma imagem neste canal." });
     
         // Filtro para capturar apenas mensagens com anexos de imagem
         const filter = (m) => 
@@ -301,7 +304,8 @@ module.exports = {
                 attachment.url.endsWith(".png") || 
                 attachment.url.endsWith(".jpg") || 
                 attachment.url.endsWith(".jpeg") || 
-                attachment.url.endsWith(".gif")
+                attachment.url.endsWith(".gif") ||
+                (attachment.contentType && attachment.contentType.startsWith("image/"))
             );
     
         // Criando o coletor (expira em 15 segundos)
@@ -312,20 +316,18 @@ module.exports = {
                 console.log(`Imagem recebida: ${attachment.url}`);
             });
     
-            // Responder no chat com a imagem recebida
-            await interaction.channel.send({ content: `Imagem recebida: ${message.attachments.first().url}` });
+            // Atualizar a interação com a imagem recebida
+            await interaction.followUp({ content: `Imagem recebida: ${message.attachments.first().url}` });
         });
     
-        collector.on("end", (collected) => {
+        collector.on("end", async (collected) => {
             console.log(`Coletor finalizado. ${collected.size} imagens recebidas.`);
             if (collected.size === 0) {
-                interaction.channel.send({ content: "Nenhuma imagem foi enviada dentro do tempo limite." });
+                await interaction.followUp({ content: "Nenhuma imagem foi enviada dentro do tempo limite." });
             }
         });
-    }
-    
-    
-    }
+    }    
+  }
 
     // Processa modais
     if (interaction.isModalSubmit()) {
