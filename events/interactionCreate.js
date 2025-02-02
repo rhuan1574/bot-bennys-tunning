@@ -286,45 +286,51 @@ module.exports = {
       }
       if (customId === "enviar_imagem") {
         if (!interaction.channel) {
-            return interaction.reply({ content: "Erro: Não consigo acessar este canal."});
+            return interaction.reply({ content: "Erro: Não consigo acessar este canal." });
         }
     
         // Defer para evitar erro de timeout
-        await interaction.deferReply({  });
+        await interaction.deferReply({ ephemeral: true });
     
         // Pedir ao usuário para enviar a imagem
         await interaction.followUp({ content: "Envie uma imagem neste canal." });
     
-        // Filtro para capturar apenas mensagens com anexos de imagem
+        // Filtro para capturar mensagens com anexos de imagem OU embeds com imagens
         const filter = (m) => 
-            m.attachments.size > 0 &&
-            m.attachments.every((attachment) => 
-                attachment.url.endsWith(".png") || 
-                attachment.url.endsWith(".jpg") || 
-                attachment.url.endsWith(".jpeg") || 
-                attachment.url.endsWith(".gif") ||
-                (attachment.contentType && attachment.contentType.startsWith("image/"))
-            );
+            m.attachments.size > 0 ||
+            (m.embeds.length > 0 && m.embeds.some(embed => embed.image || embed.thumbnail));
     
-        // Criando o coletor (expira em 15 segundos)
-        const collector = interaction.channel.createMessageCollector({ filter, time: 15_000 });
+        // Criando o coletor (expira em 30 segundos)
+        const collector = interaction.channel.createMessageCollector({ filter, time: 30_000 });
     
         collector.on("collect", async (message) => {
-            message.attachments.forEach((attachment) => {
-                console.log(`Imagem recebida: ${attachment.url}`);
-            });
+            let imageUrl = null;
     
-            // Atualizar a interação com a imagem recebida
-            await interaction.followUp({ content: `Imagem recebida: ${message.attachments.first().url}` });
+            if (message.attachments.size > 0) {
+                imageUrl = message.attachments.first().url;
+            } else if (message.embeds.length > 0) {
+                const imageEmbed = message.embeds.find(embed => embed.image || embed.thumbnail);
+                if (imageEmbed) {
+                    imageUrl = imageEmbed.image?.url || imageEmbed.thumbnail?.url;
+                }
+            }
+    
+            if (imageUrl) {
+                console.log(`Imagem recebida: ${imageUrl}`);
+    
+                // Atualizar a interação com a imagem recebida
+                await interaction.followUp({ content: `Imagem recebida: ${imageUrl}` });
+                collector.stop(); // Para evitar múltiplas capturas
+            }
         });
     
         collector.on("end", async (collected) => {
-            console.log(`Coletor finalizado. ${collected.size} imagens recebidas.`);
+            console.log(`Coletor finalizado. ${collected.size} mensagens verificadas.`);
             if (collected.size === 0) {
                 await interaction.followUp({ content: "Nenhuma imagem foi enviada dentro do tempo limite." });
             }
         });
-    }    
+    }       
   }
 
     // Processa modais
