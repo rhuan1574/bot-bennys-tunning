@@ -185,20 +185,20 @@ module.exports = {
             { label: "Transmissão 2 ⚙️", description: "Transmissão Nível 2", value: "transmissao_2" },
             { label: "Transmissão 3 ⚙️", description: "Transmissão Nível 3", value: "transmissao_3" },
             { label: "Transmissão 4 ⚙️", description: "Transmissão Nível 4", value: "transmissao_4" },
-            {label: "Freio 1 ⛔", description: "Freio Nível 1", value: "freio_1"},
-            {label: "Freio 2 ⛔", description: "Freio Nível 2", value: "freio_2"},
-            {label: "Freio 3 ⛔", description: "Freio Nível 3", value: "freio_3"},
-            {label: "Turbo 💨", description: " Turbo Boost", value: "turbo"},
-            {label: "Suspensão 1 🏎️", description: "Suspensão Nível 1", value: "suspensao_1"},
-            {label: "Suspensão 2 🏎️", description: "Suspensão Nível 2", value: "suspensao_2"},
-            {label: "Suspensão 3 🏎️", description: "Suspensão Nível 3", value: "suspensao_3"},
-            {label: "Suspensão 4 🏎️", description: "Suspensão Nível 4", value: "suspensao_4"},
-            {label: "Suspensão 5 🏎️", description: "Suspensão Nível 5", value: "suspensao_5"},
-            {label: "Blindagem 20% 💎", description: "Blindagem 20%", value: "blindagem_20"},
-            {label: "Blindagem 40% 💎", description: "Blindagem 40%", value: "blindagem_40"},
-            {label: "Blindagem 60% 💎", description: "Blindagem 60%", value: "blindagem_60"},
-            {label: "Blindagem 80% 💎", description: "Blindagem 80%", value: "blindagem_80"},
-            {label: "Blindagem 100% 💎", description: "Blindagem 100%", value: "blindagem_100"},
+            { label: "Freio 1 ⛔", description: "Freio Nível 1", value: "freio_1" },
+            { label: "Freio 2 ⛔", description: "Freio Nível 2", value: "freio_2" },
+            { label: "Freio 3 ⛔", description: "Freio Nível 3", value: "freio_3" },
+            { label: "Turbo 💨", description: " Turbo Boost", value: "turbo" },
+            { label: "Suspensão 1 🏎️", description: "Suspensão Nível 1", value: "suspensao_1" },
+            { label: "Suspensão 2 🏎️", description: "Suspensão Nível 2", value: "suspensao_2" },
+            { label: "Suspensão 3 🏎️", description: "Suspensão Nível 3", value: "suspensao_3" },
+            { label: "Suspensão 4 🏎️", description: "Suspensão Nível 4", value: "suspensao_4" },
+            { label: "Suspensão 5 🏎️", description: "Suspensão Nível 5", value: "suspensao_5" },
+            { label: "Blindagem 20% 💎", description: "Blindagem 20%", value: "blindagem_20" },
+            { label: "Blindagem 40% 💎", description: "Blindagem 40%", value: "blindagem_40" },
+            { label: "Blindagem 60% 💎", description: "Blindagem 60%", value: "blindagem_60" },
+            { label: "Blindagem 80% 💎", description: "Blindagem 80%", value: "blindagem_80" },
+            { label: "Blindagem 100% 💎", description: "Blindagem 100%", value: "blindagem_100" },
         ];
     
         const selectMenu = new StringSelectMenuBuilder()
@@ -214,8 +214,8 @@ module.exports = {
                         .setValue(item.value)
                 )
             );
-
-            const buttonConfirma = new ButtonBuilder()
+    
+        const buttonConfirma = new ButtonBuilder()
             .setCustomId('confirmar')
             .setLabel('Confirmar')
             .setStyle(ButtonStyle.Success)
@@ -266,37 +266,37 @@ module.exports = {
             console.log("Coletor encerrado.");
         });
     }
-    if(customId === "confirmar") {
-      const embedConfirmado = new EmbedBuilder()
-      .setTitle("Recibo gerado")
-      .setDescription("Seu recibo foi gerado, para enviar selecione o botão abaixo para enviar o print do comprovante.")
-      .setColor('Aqua')
-      .setTimestamp()
-
-      const  buttonImagem = new ButtonBuilder()
-      .setCustomId("enviar_imagem")
-      .setLabel("Enviar imagem")
-      .setStyle(ButtonStyle.Success)
-
-      const rowConfirmado = new ActionRowBuilder().addComponents(buttonImagem)
-      await interaction.reply({
-        embeds: [embedConfirmado],
-        components: [rowConfirmado],
-      })
-      }
-      if (customId === "enviar_imagem") {
+    if (customId === "confirmar") {
+        const embedConfirmado = new EmbedBuilder()
+            .setTitle("Recibo gerado")
+            .setDescription("Seu recibo foi gerado, para enviar selecione o botão abaixo para enviar o print do comprovante.")
+            .setColor('Aqua')
+            .setTimestamp()
+    
+        const buttonImagem = new ButtonBuilder()
+            .setCustomId("enviar_imagem")
+            .setLabel("Enviar imagem")
+            .setStyle(ButtonStyle.Success)
+    
+        const rowConfirmado = new ActionRowBuilder().addComponents(buttonImagem)
+        await interaction.reply({
+            embeds: [embedConfirmado],
+            components: [rowConfirmado],
+        })
+    }
+    if (customId === "enviar_imagem") {
         if (!interaction.channel) {
             return interaction.reply({ content: "Erro: Não consigo acessar este canal." });
         }
     
-        // Defer para evitar erro de timeout
+        // Adiar a resposta para evitar erro de timeout
         await interaction.deferReply({ ephemeral: true });
     
         // Pedir ao usuário para enviar a imagem
         await interaction.followUp({ content: "Envie uma imagem neste canal." });
     
         // Filtro para capturar mensagens com anexos de imagem OU embeds com imagens
-        const filter = (m) => 
+        const filter = (m) =>
             m.attachments.size > 0 ||
             (m.embeds.length > 0 && m.embeds.some(embed => embed.image || embed.thumbnail));
     
