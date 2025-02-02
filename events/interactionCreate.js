@@ -201,38 +201,34 @@ module.exports = {
       }
       
       if (customId === "recibo") {
-        // Criando menu de seleção
-        const userSelect = new StringSelectMenuBuilder()
-          .setCustomId("users")
-          .setPlaceholder("Selecione até 6 itens.")
-          .setMinValues(1)
-          .setMaxValues(6)
-          .addOptions(menuOptions); // Certifique-se de que menuOptions está definido
-      
-        const rowMenu = new ActionRowBuilder().addComponents(userSelect);
-      
-        // Criando botões de ação
-        const buttonConfirm = new ButtonBuilder()
-          .setCustomId("confirmar")
-          .setLabel("Confirmar")
-          .setStyle(ButtonStyle.Success);
-      
-        const buttonRetry = new ButtonBuilder()
-          .setCustomId("refazer")
-          .setLabel("Refazer")
-          .setStyle(ButtonStyle.Danger);
-      
-        const rowButtons = new ActionRowBuilder().addComponents(
-          buttonConfirm,
-          buttonRetry
-        );
-      
-        await interaction.reply({
-          content: "Por favor, selecione os itens desejados:",
-          components: [rowMenu, rowButtons],
-          flags: 64,
-        });
-      
+        const button1 = new ButtonBuilder()
+        .setLabel("Motor 1 🔧")
+        .setCustomId('motor_1')
+        .setStyle(ButtonStyle.Success)
+
+        const button2 = new ButtonBuilder()
+        .setLabel("Motor 2 🔧")
+        .setCustomId('motor_2')
+        .setStyle(ButtonStyle.Success)
+
+        const button3 = new ButtonBuilder()
+        .setLabel("Motor 3 🔧")
+        .setCustomId('motor_3')
+        .setStyle(ButtonStyle.Success)
+
+        const button4 = new ButtonBuilder()
+        .setLabel("Motor 4 🔧")
+        .setCustomId('motor_4')
+        .setStyle(ButtonStyle.Success)
+
+        const rowButton = new ActionRowBuilder().addComponents(button1, button2, button3, button4)
+
+        interaction.reply({
+          content: 'Selecione os serviços feitos:',
+          components: [rowButton],
+          flags: 64
+        })
+
       } else if (customId === "users") {
         // Obtendo os valores selecionados
         const selectedValues = interaction.values;
