@@ -198,22 +198,22 @@ module.exports = {
           {
             label: "Transmissão 1",
             description: "Transmissão Nível 1",
-            value: "motor_4",
+            value: "transmissao_1",
           },
           {
             label: "Transmissão 2",
             description: "Transmissão Nível 2",
-            value: "motor_4",
+            value: "transmissao_2",
           },
           {
             label: "Transmissão 3",
             description: "Transmissão Nível 3",
-            value: "motor_4",
+            value: "transmissao_3",
           },
           {
             label: "Transmissão 4",
             description: "Transmissão Nível 4",
-            value: "motor_4",
+            value: "transmissao_4",
           },
         ];
         const selectMenu = new StringSelectMenuBuilder()
