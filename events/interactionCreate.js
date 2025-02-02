@@ -207,27 +207,7 @@ module.exports = {
           .setPlaceholder("Selecione até 6 itens.")
           .setMinValues(1)
           .setMaxValues(6)
-          .addOptions(
-            new StringSelectMenuOptionBuilder()
-            .setLabel("Motor 1")
-            .setDescription('Motor 1')
-            .setValue("motor_1"),
-
-            new StringSelectMenuOptionBuilder()
-            .setLabel("Motor 2")
-            .setDescription('Motor 2')
-            .setValue("motor_2"),
-
-            new StringSelectMenuOptionBuilder()
-            .setLabel("Motor 3")
-            .setDescription('Motor 3')
-            .setValue("motor_3"),
-
-            new StringSelectMenuOptionBuilder()
-            .setLabel("Motor 4")
-            .setDescription('Motor 4')
-            .setValue("motor_4")
-          ); // Certifique-se de que menuOptions está definido
+          .addOptions(menuOptions); // Certifique-se de que menuOptions está definido
       
         const rowMenu = new ActionRowBuilder().addComponents(userSelect);
       
