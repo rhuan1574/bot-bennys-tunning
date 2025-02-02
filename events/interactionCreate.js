@@ -10,12 +10,14 @@ const {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   ComponentType,
+  Collection,
 } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 const { webhookId, webhookToken, tagMembers } = require("../config.json");
 const webhookClient = new WebhookClient({ id: webhookId, token: webhookToken });
 
+const collectorMessage = new Collection();
 // Caminho para o arquivo JSON que armazenará os canais criados
 const CHANNELS_FILE = path.resolve(__dirname, "channels.json");
 
@@ -173,64 +175,105 @@ module.exports = {
 
       if (customId === "recibo") {
         const tunagem = [
-            { label: "Motor 1", description: "Motor Nível 1", value: "motor_1" },
-            { label: "Motor 2", description: "Motor Nível 2", value: "motor_2" },
-            { label: "Motor 3", description: "Motor Nível 3", value: "motor_3" },
-            { label: "Motor 4", description: "Motor Nível 4", value: "motor_4" },
-            { label: "Transmissão 1", description: "Transmissão Nível 1", value: "transmissao_1" },
-            { label: "Transmissão 2", description: "Transmissão Nível 2", value: "transmissao_2" },
-            { label: "Transmissão 3", description: "Transmissão Nível 3", value: "transmissao_3" },
-            { label: "Transmissão 4", description: "Transmissão Nível 4", value: "transmissao_4" },
+          { label: "Motor 1", description: "Motor Nível 1", value: "motor_1" },
+          { label: "Motor 2", description: "Motor Nível 2", value: "motor_2" },
+          { label: "Motor 3", description: "Motor Nível 3", value: "motor_3" },
+          { label: "Motor 4", description: "Motor Nível 4", value: "motor_4" },
+          {
+            label: "Transmissão 1",
+            description: "Transmissão Nível 1",
+            value: "transmissao_1",
+          },
+          {
+            label: "Transmissão 2",
+            description: "Transmissão Nível 2",
+            value: "transmissao_2",
+          },
+          {
+            label: "Transmissão 3",
+            description: "Transmissão Nível 3",
+            value: "transmissao_3",
+          },
+          {
+            label: "Transmissão 4",
+            description: "Transmissão Nível 4",
+            value: "transmissao_4",
+          },
         ];
-    
+
         const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId(interaction.id)
-            .setMinValues(1)
-            .setMaxValues(6)
-            .setPlaceholder("Selecione até 6 serviços...")
-            .addOptions(tunagem.map(tunagem =>
-                new StringSelectMenuOptionBuilder()
-                    .setLabel(tunagem.label)
-                    .setDescription(tunagem.description)
-                    .setValue(tunagem.value)
-            ));
-    
+          .setCustomId("tunagem_menu")
+          .setMinValues(1)
+          .setMaxValues(6)
+          .setPlaceholder("Selecione até 6 serviços...")
+          .addOptions(
+            tunagem.map((item) =>
+              new StringSelectMenuOptionBuilder()
+                .setLabel(item.label)
+                .setDescription(item.description)
+                .setValue(item.value)
+            )
+          );
+
         const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
-    
+
         const embed = new EmbedBuilder()
+          .setTitle("Serviços Selecionados")
+          .setDescription("Nenhum serviço selecionado ainda.")
+          .setColor("#0099ff");
+
+        // Responde à interação com o menu de seleção e embed
+        await interaction.reply({
+          embeds: [embed],
+          components: [rowSelect],
+          ephemeral: true, // Apenas visível para o usuário que interagiu
+        });
+
+        // Criar um coletor de mensagens (apenas se interaction.channel existir)
+        if (interaction.channel) {
+          const collectorFilter = (m) =>
+            m.content.toLowerCase().includes("motor");
+          const collector = interaction.channel.createMessageCollector({
+            filter: collectorFilter,
+            time: 15_000,
+          });
+
+          collector.on("collect", (m) => {
+            console.log(`Collected: ${m.content}`);
+          });
+
+          collector.on("end", (collected) => {
+            console.log(`Total de mensagens coletadas: ${collected.size}`);
+          });
+        }
+
+        // Criar um coletor de interações para o menu suspenso
+        const filter = (i) =>
+          i.customId === "tunagem_menu" && i.user.id === interaction.user.id;
+        const collector = interaction.channel.createMessageComponentCollector({
+          filter,
+          time: 30_000,
+        });
+
+        collector.on("collect", async (i) => {
+          const selectedServices = i.values.map(
+            (value) =>
+              tunagem.find((item) => item.value === value)?.label || value
+          );
+
+          // Atualiza o embed com os serviços selecionados
+          const updatedEmbed = new EmbedBuilder()
             .setTitle("Serviços Selecionados")
-            .setDescription("Nenhum serviço selecionado ainda.")
+            .setDescription(
+              selectedServices.join("\n") || "Nenhum serviço selecionado ainda."
+            )
             .setColor("#0099ff");
-    
-        const reply = await interaction.reply({
-            content: "Selecione os serviços feitos:",
-            components: [rowSelect],
-            embeds: [embed],
-            ephemeral: true
+
+          await i.update({ embeds: [updatedEmbed], components: [rowSelect] });
         });
-    
-        const collector = reply.createMessageComponentCollector({
-            componentType: ComponentType.StringSelect,
-            filter: (i) => i.user.id === interaction.user.id && i.customId === interaction.id,
-            time: 60_000,
-        });
-    
-        collector.on('collect', async (i) => {
-            const selectedServices = i.values.map(value => {
-                const service = tunagem.find(t => t.value === value);
-                return `✅ ${service.label} - ${service.description}`;
-            });
-    
-            embed.setDescription(selectedServices.join("\n"));
-    
-            await i.update({
-                embeds: [embed],
-                components: [rowSelect],
-            });
-        });
-    
+
         collector.on("end", () => {
-            reply.edit({ components: [] });
+          console.log("Coletor encerrado.");
         });
       }
     }
