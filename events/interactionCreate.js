@@ -232,8 +232,8 @@ module.exports = {
         collector.on("end", () => {
             reply.edit({ components: [] });
         });
+      }
     }
-  }
 
     // Processa modais
     if (interaction.isModalSubmit()) {
