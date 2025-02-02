@@ -11,6 +11,8 @@ const {
   StringSelectMenuOptionBuilder,
   ComponentType,
   Collection,
+  ButtonBuilder,
+  ButtonStyle,
 } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
@@ -183,6 +185,20 @@ module.exports = {
             { label: "Transmissão 2", description: "Transmissão Nível 2", value: "transmissao_2" },
             { label: "Transmissão 3", description: "Transmissão Nível 3", value: "transmissao_3" },
             { label: "Transmissão 4", description: "Transmissão Nível 4", value: "transmissao_4" },
+            {label: "Freio 1 ⛔", description: "Freio Nível 1", value: "freio_1"},
+            {label: "Freio 2 ⛔", description: "Freio Nível 2", value: "freio_2"},
+            {label: "Freio 3 ⛔", description: "Freio Nível 3", value: "freio_3"},
+            {label: "Turbo 💨", description: " Turbo Boost", value: "turbo"},
+            {label: "Suspensão 1 🏎️", description: "Suspensão Nível 1", value: "suspensao_1"},
+            {label: "Suspensão 2 🏎️", description: "Suspensão Nível 2", value: "suspensao_2"},
+            {label: "Suspensão 3 🏎️", description: "Suspensão Nível 3", value: "suspensao_3"},
+            {label: "Suspensão 4 🏎️", description: "Suspensão Nível 4", value: "suspensao_4"},
+            {label: "Suspensão 5 🏎️", description: "Suspensão Nível 5", value: "suspensao_5"},
+            {label: "Blindagem 20% 💎", description: "Blindagem 20%", value: "blindagem_20"},
+            {label: "Blindagem 40% 💎", description: "Blindagem 40%", value: "blindagem_40"},
+            {label: "Blindagem 60% 💎", description: "Blindagem 60%", value: "blindagem_60"},
+            {label: "Blindagem 80% 💎", description: "Blindagem 80%", value: "blindagem_80"},
+            {label: "Blindagem 100% 💎", description: "Blindagem 100%", value: "blindagem_100"},
         ];
     
         const selectMenu = new StringSelectMenuBuilder()
@@ -198,8 +214,13 @@ module.exports = {
                         .setValue(item.value)
                 )
             );
+
+            const buttonConfirma = new ButtonBuilder()
+            .setCustomId('confirmar')
+            .setLabel('Confirmar✅')
+            .setStyle(ButtonStyle.Success)
     
-        const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
+        const rowSelect = new ActionRowBuilder().addComponents(selectMenu, buttonConfirma);
     
         let selectedServices = []; // Lista para armazenar as seleções do usuário
     
