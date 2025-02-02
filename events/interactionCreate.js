@@ -177,14 +177,14 @@ module.exports = {
 
       if (customId === "recibo") {
         const tunagem = [
-            { label: "Motor 1", description: "Motor Nível 1", value: "motor_1" },
-            { label: "Motor 2", description: "Motor Nível 2", value: "motor_2" },
-            { label: "Motor 3", description: "Motor Nível 3", value: "motor_3" },
-            { label: "Motor 4", description: "Motor Nível 4", value: "motor_4" },
-            { label: "Transmissão 1", description: "Transmissão Nível 1", value: "transmissao_1" },
-            { label: "Transmissão 2", description: "Transmissão Nível 2", value: "transmissao_2" },
-            { label: "Transmissão 3", description: "Transmissão Nível 3", value: "transmissao_3" },
-            { label: "Transmissão 4", description: "Transmissão Nível 4", value: "transmissao_4" },
+            { label: "Motor 1 🔧", description: "Motor Nível 1", value: "motor_1" },
+            { label: "Motor 2 🔧", description: "Motor Nível 2", value: "motor_2" },
+            { label: "Motor 3 🔧", description: "Motor Nível 3", value: "motor_3" },
+            { label: "Motor 4 🔧", description: "Motor Nível 4", value: "motor_4" },
+            { label: "Transmissão 1 ⚙️", description: "Transmissão Nível 1", value: "transmissao_1" },
+            { label: "Transmissão 2 ⚙️", description: "Transmissão Nível 2", value: "transmissao_2" },
+            { label: "Transmissão 3 ⚙️", description: "Transmissão Nível 3", value: "transmissao_3" },
+            { label: "Transmissão 4 ⚙️", description: "Transmissão Nível 4", value: "transmissao_4" },
             {label: "Freio 1 ⛔", description: "Freio Nível 1", value: "freio_1"},
             {label: "Freio 2 ⛔", description: "Freio Nível 2", value: "freio_2"},
             {label: "Freio 3 ⛔", description: "Freio Nível 3", value: "freio_3"},
@@ -222,7 +222,7 @@ module.exports = {
             .setEmoji('✅')
     
         const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
-        const rowBotton = new ActionRowBuilder().addComponents(buttonConfirma);
+        const rowButton = new ActionRowBuilder().addComponents(buttonConfirma);
     
         let selectedServices = []; // Lista para armazenar as seleções do usuário
     
@@ -234,7 +234,7 @@ module.exports = {
         // Enviar a mensagem inicial com a embed e o menu de seleção
         await interaction.reply({
             embeds: [embed],
-            components: [rowSelect, rowBotton],
+            components: [rowSelect],
             ephemeral: true,
         });
     
@@ -260,13 +260,63 @@ module.exports = {
                 )
                 .setColor("#0099ff");
     
-            await i.update({ embeds: [updatedEmbed], components: [rowSelect] });
+            await i.update({ embeds: [updatedEmbed], components: [rowSelect, rowButton] });
         });
     
         collector.on("end", () => {
             console.log("Coletor encerrado.");
         });
     }
+    if(customId === "confirmar") {
+      const embedConfirmado = new EmbedBuilder()
+      .setTitle("Recibo gerado")
+      .setDescription("Seu recibo foi gerado, para enviar selecione o botão abaixo para enviar o print do comprovante.")
+      .setColor('Aqua')
+      .setTimestamp()
+
+      const  buttonImagem = new ButtonBuilder()
+      .setCustomId("enviar_imagem")
+      .setLabel("Enviar imagem")
+      .setStyle(ButtonStyle.Success)
+
+      const rowConfirmado = new ActionRowBuilder().addComponents(buttonImagem)
+      await interaction.reply({
+        embeds: [embedConfirmado],
+        components: [rowConfirmado],
+        ephemeral: true
+      })
+      }
+      if (customId === "enviar_imagem") {
+        // Verifica se a interação possui um canal válido
+        if (!interaction.channel) {
+            return interaction.reply({ content: "Erro: Não consigo acessar este canal.", ephemeral: true });
+        }
+    
+        // Responde pedindo para o usuário enviar uma imagem
+        await interaction.reply({ content: "Envie uma imagem neste canal.", ephemeral: true });
+    
+        // Filtro para capturar apenas mensagens que contenham anexos de imagem
+        const filter = (m) =>
+            m.attachments.size > 0 &&
+            m.attachments.every((attachment) => attachment.contentType.startsWith("image/"));
+    
+        // Criando o coletor de mensagens (expira em 15 segundos)
+        const collector = interaction.channel.createMessageCollector({ filter, time: 15_000 });
+    
+        collector.on("collect", (message) => {
+            message.attachments.forEach((attachment) => {
+                console.log(`Imagem recebida: ${attachment.url}`);
+            });
+    
+            // Enviar uma resposta no chat com a imagem recebida
+            interaction.followUp({ content: `Imagem recebida: ${message.attachments.first().url}`, ephemeral: true });
+        });
+    
+        collector.on("end", (collected) => {
+            console.log(`Coletor finalizado. ${collected.size} imagens recebidas.`);
+        });
+    }
+    
     }
 
     // Processa modais
