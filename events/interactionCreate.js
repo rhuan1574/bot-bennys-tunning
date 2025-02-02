@@ -227,13 +227,11 @@ module.exports = {
           button8
         );
 
-        interaction.reply({
+        await interaction.reply({
           content: "Selecione os serviços feitos:",
           components: [rowButton, rowButton2],
           flags: 64,
         });
-
-        userCollection.set(interaction.user.id, new Set());
       }
       if (customId === "confirmar") {
         if (selections.size === 0) {
