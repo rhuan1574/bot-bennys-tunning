@@ -230,7 +230,7 @@ module.exports = {
         await interaction.reply({
           content: "Por favor, selecione os itens desejados:",
           components: [rowMenu, rowButtons],
-          ephemeral: true,
+          flags: 64,
         });
       
       } else if (customId === "users") {
