@@ -287,35 +287,43 @@ module.exports = {
       })
       }
       if (customId === "enviar_imagem") {
-        // Verifica se a interação possui um canal válido
         if (!interaction.channel) {
             return interaction.reply({ content: "Erro: Não consigo acessar este canal.", ephemeral: true });
         }
     
-        // Responde pedindo para o usuário enviar uma imagem
-        await interaction.reply({ content: "Envie uma imagem neste canal.", ephemeral: true });
+        // Pede para o usuário enviar a imagem
+        await interaction.reply({ content: "Envie uma imagem neste canal." });
     
-        // Filtro para capturar apenas mensagens que contenham anexos de imagem
-        const filter = (m) =>
+        // Filtro para capturar apenas mensagens com anexos de imagem
+        const filter = (m) => 
             m.attachments.size > 0 &&
-            m.attachments.every((attachment) => attachment.contentType.startsWith("image/"));
+            m.attachments.every((attachment) => 
+                attachment.url.endsWith(".png") || 
+                attachment.url.endsWith(".jpg") || 
+                attachment.url.endsWith(".jpeg") || 
+                attachment.url.endsWith(".gif")
+            );
     
-        // Criando o coletor de mensagens (expira em 15 segundos)
+        // Criando o coletor (expira em 15 segundos)
         const collector = interaction.channel.createMessageCollector({ filter, time: 15_000 });
     
-        collector.on("collect", (message) => {
+        collector.on("collect", async (message) => {
             message.attachments.forEach((attachment) => {
                 console.log(`Imagem recebida: ${attachment.url}`);
             });
     
-            // Enviar uma resposta no chat com a imagem recebida
-            interaction.followUp({ content: `Imagem recebida: ${message.attachments.first().url}`, ephemeral: true });
+            // Responder no chat com a imagem recebida
+            await interaction.channel.send({ content: `Imagem recebida: ${message.attachments.first().url}` });
         });
     
         collector.on("end", (collected) => {
             console.log(`Coletor finalizado. ${collected.size} imagens recebidas.`);
+            if (collected.size === 0) {
+                interaction.channel.send({ content: "Nenhuma imagem foi enviada dentro do tempo limite." });
+            }
         });
     }
+    
     
     }
 
