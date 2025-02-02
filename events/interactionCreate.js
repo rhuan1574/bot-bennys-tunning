@@ -235,7 +235,6 @@ module.exports = {
         await interaction.reply({
             embeds: [embed],
             components: [rowSelect],
-            ephemeral: true,
         });
     
         // Criar um coletor para capturar as seleções do menu suspenso
@@ -283,7 +282,6 @@ module.exports = {
       await interaction.reply({
         embeds: [embedConfirmado],
         components: [rowConfirmado],
-        ephemeral: true
       })
       }
       if (customId === "enviar_imagem") {
