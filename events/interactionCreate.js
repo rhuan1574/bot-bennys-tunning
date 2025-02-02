@@ -291,7 +291,7 @@ module.exports = {
     
         // Adiar a resposta para evitar erro de timeout
         await interaction.deferReply({ 
-          flags: InteractionResponseFlags.Ephemeral 
+          flags: 64
         });
     
         // Pedir ao usuário para enviar a imagem
