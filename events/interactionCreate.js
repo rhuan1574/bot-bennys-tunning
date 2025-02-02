@@ -290,7 +290,9 @@ module.exports = {
         }
     
         // Adiar a resposta para evitar erro de timeout
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ 
+          flags: InteractionResponseFlags.Ephemeral 
+        });
     
         // Pedir ao usuário para enviar a imagem
         await interaction.followUp({ content: "Envie uma imagem neste canal." });
