@@ -217,10 +217,11 @@ module.exports = {
 
             const buttonConfirma = new ButtonBuilder()
             .setCustomId('confirmar')
-            .setLabel('Confirmar✅')
+            .setLabel('Confirmar')
             .setStyle(ButtonStyle.Success)
+            .setEmoji('✅')
     
-        const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
+        const rowSelect = new ActionRowBuilder().addComponents(selectMenu, buttonConfirma);
     
         let selectedServices = []; // Lista para armazenar as seleções do usuário
     
@@ -232,7 +233,7 @@ module.exports = {
         // Enviar a mensagem inicial com a embed e o menu de seleção
         await interaction.reply({
             embeds: [embed],
-            components: [rowSelect, buttonConfirma],
+            components: [rowSelect],
             ephemeral: true,
         });
     
