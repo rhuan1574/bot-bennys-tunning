@@ -4,7 +4,12 @@ const { Client, Events, GatewayIntentBits, Collection} = require('discord.js');
 const { token } = require('./config.json');
 
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds]
+    intents: [
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,  // Necessário para ler mensagens em canais de texto
+        GatewayIntentBits.MessageContent, // Necessário para ler o conteúdo das mensagens
+        GatewayIntentBits.DirectMessages, // Caso o bot esteja lendo mensagens privadas (não é o caso aqui)
+	]
 })
 
 client.commands = new Collection();
