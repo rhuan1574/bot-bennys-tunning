@@ -470,11 +470,11 @@ module.exports = {
               }
           });
       }
-      webhookRecibo.send({
-        embeds: [embedConfirmado]
-      })
     }
     }
+    webhookRecibo.send({
+      content: "Achei!!"
+    })
 
     // Processa modais
     if (interaction.isModalSubmit()) {
