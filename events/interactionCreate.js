@@ -177,168 +177,327 @@ module.exports = {
 
       if (customId === "recibo") {
         const tunagem = [
-            { label: "Motor 1 🔧", description: "Motor Nível 1", value: "motor_1" },
-            { label: "Motor 2 🔧", description: "Motor Nível 2", value: "motor_2" },
-            { label: "Motor 3 🔧", description: "Motor Nível 3", value: "motor_3" },
-            { label: "Motor 4 🔧", description: "Motor Nível 4", value: "motor_4" },
-            { label: "Transmissão 1 ⚙️", description: "Transmissão Nível 1", value: "transmissao_1" },
-            { label: "Transmissão 2 ⚙️", description: "Transmissão Nível 2", value: "transmissao_2" },
-            { label: "Transmissão 3 ⚙️", description: "Transmissão Nível 3", value: "transmissao_3" },
-            { label: "Transmissão 4 ⚙️", description: "Transmissão Nível 4", value: "transmissao_4" },
-            { label: "Freio 1 ⛔", description: "Freio Nível 1", value: "freio_1" },
-            { label: "Freio 2 ⛔", description: "Freio Nível 2", value: "freio_2" },
-            { label: "Freio 3 ⛔", description: "Freio Nível 3", value: "freio_3" },
-            { label: "Turbo 💨", description: " Turbo Boost", value: "turbo" },
-            { label: "Suspensão 1 🏎️", description: "Suspensão Nível 1", value: "suspensao_1" },
-            { label: "Suspensão 2 🏎️", description: "Suspensão Nível 2", value: "suspensao_2" },
-            { label: "Suspensão 3 🏎️", description: "Suspensão Nível 3", value: "suspensao_3" },
-            { label: "Suspensão 4 🏎️", description: "Suspensão Nível 4", value: "suspensao_4" },
-            { label: "Suspensão 5 🏎️", description: "Suspensão Nível 5", value: "suspensao_5" },
-            { label: "Blindagem 20% 💎", description: "Blindagem 20%", value: "blindagem_20" },
-            { label: "Blindagem 40% 💎", description: "Blindagem 40%", value: "blindagem_40" },
-            { label: "Blindagem 60% 💎", description: "Blindagem 60%", value: "blindagem_60" },
-            { label: "Blindagem 80% 💎", description: "Blindagem 80%", value: "blindagem_80" },
-            { label: "Blindagem 100% 💎", description: "Blindagem 100%", value: "blindagem_100" },
+          {
+            label: "Motor 1 🔧",
+            description: "Motor Nível 1",
+            value: "motor_1",
+          },
+          {
+            label: "Motor 2 🔧",
+            description: "Motor Nível 2",
+            value: "motor_2",
+          },
+          {
+            label: "Motor 3 🔧",
+            description: "Motor Nível 3",
+            value: "motor_3",
+          },
+          {
+            label: "Motor 4 🔧",
+            description: "Motor Nível 4",
+            value: "motor_4",
+          },
+          {
+            label: "Transmissão 1 ⚙️",
+            description: "Transmissão Nível 1",
+            value: "transmissao_1",
+          },
+          {
+            label: "Transmissão 2 ⚙️",
+            description: "Transmissão Nível 2",
+            value: "transmissao_2",
+          },
+          {
+            label: "Transmissão 3 ⚙️",
+            description: "Transmissão Nível 3",
+            value: "transmissao_3",
+          },
+          {
+            label: "Transmissão 4 ⚙️",
+            description: "Transmissão Nível 4",
+            value: "transmissao_4",
+          },
+          {
+            label: "Freio 1 ⛔",
+            description: "Freio Nível 1",
+            value: "freio_1",
+          },
+          {
+            label: "Freio 2 ⛔",
+            description: "Freio Nível 2",
+            value: "freio_2",
+          },
+          {
+            label: "Freio 3 ⛔",
+            description: "Freio Nível 3",
+            value: "freio_3",
+          },
+          { label: "Turbo 💨", description: " Turbo Boost", value: "turbo" },
+          {
+            label: "Suspensão 1 🏎️",
+            description: "Suspensão Nível 1",
+            value: "suspensao_1",
+          },
+          {
+            label: "Suspensão 2 🏎️",
+            description: "Suspensão Nível 2",
+            value: "suspensao_2",
+          },
+          {
+            label: "Suspensão 3 🏎️",
+            description: "Suspensão Nível 3",
+            value: "suspensao_3",
+          },
+          {
+            label: "Suspensão 4 🏎️",
+            description: "Suspensão Nível 4",
+            value: "suspensao_4",
+          },
+          {
+            label: "Suspensão 5 🏎️",
+            description: "Suspensão Nível 5",
+            value: "suspensao_5",
+          },
+          {
+            label: "Blindagem 20% 💎",
+            description: "Blindagem 20%",
+            value: "blindagem_20",
+          },
+          {
+            label: "Blindagem 40% 💎",
+            description: "Blindagem 40%",
+            value: "blindagem_40",
+          },
+          {
+            label: "Blindagem 60% 💎",
+            description: "Blindagem 60%",
+            value: "blindagem_60",
+          },
+          {
+            label: "Blindagem 80% 💎",
+            description: "Blindagem 80%",
+            value: "blindagem_80",
+          },
+          {
+            label: "Blindagem 100% 💎",
+            description: "Blindagem 100%",
+            value: "blindagem_100",
+          },
         ];
-    
+
         const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId("tunagem_menu")
-            .setMinValues(1)
-            .setMaxValues(6)
-            .setPlaceholder("Selecione até 6 serviços...")
-            .addOptions(
-                tunagem.map((item) =>
-                    new StringSelectMenuOptionBuilder()
-                        .setLabel(item.label)
-                        .setDescription(item.description)
-                        .setValue(item.value)
-                )
-            );
-    
+          .setCustomId("tunagem_menu")
+          .setMinValues(1)
+          .setMaxValues(6)
+          .setPlaceholder("Selecione até 6 serviços...")
+          .addOptions(
+            tunagem.map((item) =>
+              new StringSelectMenuOptionBuilder()
+                .setLabel(item.label)
+                .setDescription(item.description)
+                .setValue(item.value)
+            )
+          );
+
         const buttonConfirma = new ButtonBuilder()
-            .setCustomId('confirmar')
-            .setLabel('Confirmar')
-            .setStyle(ButtonStyle.Success)
-            .setEmoji('✅')
-    
+          .setCustomId("confirmar")
+          .setLabel("Confirmar")
+          .setStyle(ButtonStyle.Success)
+          .setEmoji("✅");
+
         const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
         const rowButton = new ActionRowBuilder().addComponents(buttonConfirma);
-    
+
         let selectedServices = []; // Lista para armazenar as seleções do usuário
-    
+
         const embed = new EmbedBuilder()
-            .setTitle("Serviços Selecionados")
-            .setDescription("Nenhum serviço selecionado ainda.")
-            .setColor("#0099ff");
-    
+          .setTitle("Serviços Selecionados")
+          .setDescription("Nenhum serviço selecionado ainda.")
+          .setColor("#0099ff");
+
         // Enviar a mensagem inicial com a embed e o menu de seleção
         await interaction.reply({
-            embeds: [embed],
-            components: [rowSelect],
+          embeds: [embed],
+          components: [rowSelect],
         });
-    
+
         // Criar um coletor para capturar as seleções do menu suspenso
-        const filter = (i) => i.customId === "tunagem_menu" && i.user.id === interaction.user.id;
-        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 30_000 });
-    
+        const filter = (i) =>
+          i.customId === "tunagem_menu" && i.user.id === interaction.user.id;
+        const collector = interaction.channel.createMessageComponentCollector({
+          filter,
+          time: 30_000,
+        });
+
         collector.on("collect", async (i) => {
-            // Adiciona as novas seleções à lista sem duplicar
-            i.values.forEach((value) => {
-                if (!selectedServices.includes(value)) {
-                    selectedServices.push(value);
-                }
-            });
-    
-            // Criar um novo embed com as opções selecionadas
-            const updatedEmbed = new EmbedBuilder()
-                .setTitle("Serviços Selecionados")
-                .setDescription(
-                    selectedServices
-                        .map((value) => tunagem.find((item) => item.value === value)?.label || value)
-                        .join("\n")
+          // Adiciona as novas seleções à lista sem duplicar
+          i.values.forEach((value) => {
+            if (!selectedServices.includes(value)) {
+              selectedServices.push(value);
+            }
+          });
+
+          // Criar um novo embed com as opções selecionadas
+          const updatedEmbed = new EmbedBuilder()
+            .setTitle("Serviços Selecionados")
+            .setDescription(
+              selectedServices
+                .map(
+                  (value) =>
+                    tunagem.find((item) => item.value === value)?.label || value
                 )
-                .setColor("#0099ff");
-    
-            await i.update({ embeds: [updatedEmbed], components: [rowSelect, rowButton] });
+                .join("\n")
+            )
+            .setColor("#0099ff");
+
+          await i.update({
+            embeds: [updatedEmbed],
+            components: [rowSelect, rowButton],
+          });
         });
-    
+
         collector.on("end", () => {
-            console.log("Coletor encerrado.");
+          console.log("Coletor encerrado.");
         });
-    }
-    
-    if (customId === "confirmar") {
+      }
+
+      if (customId === "confirmar") {
         const embedConfirmado = new EmbedBuilder()
-            .setTitle("Recibo gerado")
-            .setDescription("Seu recibo foi gerado, para enviar selecione o botão abaixo para enviar o print do comprovante.")
-            .setColor('Aqua')
-            .setTimestamp()
-    
+          .setTitle("Recibo gerado")
+          .setDescription(
+            "Seu recibo foi gerado. Para enviar, selecione o botão abaixo e envie o print do comprovante."
+          )
+          .setColor("Aqua")
+          .setTimestamp();
+
         const buttonImagem = new ButtonBuilder()
-            .setCustomId("enviar_imagem")
-            .setLabel("Enviar imagem")
-            .setStyle(ButtonStyle.Success)
-    
-        const rowConfirmado = new ActionRowBuilder().addComponents(buttonImagem)
+          .setCustomId("enviar_imagem")
+          .setLabel("Enviar imagem")
+          .setStyle(ButtonStyle.Success);
+
+        const rowConfirmado = new ActionRowBuilder().addComponents(
+          buttonImagem
+        );
+
         await interaction.reply({
-            embeds: [embedConfirmado],
-            components: [rowConfirmado],
-        })
-    }
-    
-    if (customId === "enviar_imagem") {
+          embeds: [embedConfirmado],
+          components: [rowConfirmado],
+        });
+      }
+
+      if (customId === "enviar_imagem") {
         if (!interaction.channel) {
-            return interaction.reply({ content: "Erro: Não consigo acessar este canal." });
+          return interaction.reply({
+            content: "Erro: Não consigo acessar este canal.",
+            ephemeral: true,
+          });
         }
-    
+
+        // Verificar permissões do bot
+        if (
+          !interaction.channel
+            .permissionsFor(interaction.client.user)
+            .has(["VIEW_CHANNEL", "READ_MESSAGE_HISTORY"])
+        ) {
+          return interaction.reply({
+            content: "❌ Não tenho permissões para ler mensagens neste canal.",
+            ephemeral: true,
+          });
+        }
+
         // Adiar a resposta para evitar erro de timeout
-        await interaction.deferReply({ 
-            flags: 64 // Ephemeral
+        await interaction.deferReply({ ephemeral: true });
+
+        // Desabilitar o botão após clicar
+        const buttonImagemDesativado = ButtonBuilder.from(
+          interaction.message.components[0].components[0]
+        ).setDisabled(true);
+        const rowAtualizado = new ActionRowBuilder().addComponents(
+          buttonImagemDesativado
+        );
+
+        await interaction.editReply({
+          content: "📤 Envie uma imagem neste canal.",
+          components: [rowAtualizado],
         });
-    
-        // Pedir ao usuário para enviar a imagem
-        await interaction.followUp({ content: "📤 Envie uma imagem neste canal." });
-    
-        // Filtro para capturar mensagens com anexos de imagem OU embeds com imagens
-        const filter = (m) => 
-            m.author.id === interaction.user.id && // Apenas o usuário original
-            (m.attachments.size > 0 || m.embeds.some(embed => embed.image || embed.thumbnail));
-    
+
+        // Filtro para capturar mensagens com anexos de imagem, embeds ou links diretos de imagem
+        const filter = (m) => {
+          const isAuthor = m.author.id === interaction.user.id;
+          const hasImageAttachment = m.attachments.some((att) =>
+            att.contentType?.startsWith("image/")
+          );
+          const hasImageEmbed = m.embeds.some(
+            (embed) => embed.image || embed.thumbnail
+          );
+          const imageUrlPattern = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif))/i;
+          const hasImageLink = imageUrlPattern.test(m.content);
+
+          return (
+            isAuthor && (hasImageAttachment || hasImageEmbed || hasImageLink)
+          );
+        };
+
         // Criando o coletor (expira em 2 minutos)
-        const collector = interaction.channel.createMessageCollector({ filter, time: 120_000 });
-    
+        const collector = interaction.channel.createMessageCollector({
+          filter,
+          time: 120_000,
+        });
+
         collector.on("collect", async (message) => {
-            let imageUrl = null;
-    
-            if (message.attachments.size > 0) {
-                const attachment = message.attachments.first();
-                if (attachment.contentType?.startsWith("image/")) {
-                    imageUrl = attachment.url;
-                } else {
-                    await interaction.followUp({ content: "❌ O arquivo enviado não é uma imagem válida.", ephemeral: true });
-                    return;
-                }
-            } else if (message.embeds.length > 0) {
-                const imageEmbed = message.embeds.find(embed => embed.image || embed.thumbnail);
-                if (imageEmbed) {
-                    imageUrl = imageEmbed.image?.url || imageEmbed.thumbnail?.url;
-                }
+          let imageUrl = null;
+
+          // Verificar anexos de imagem
+          if (message.attachments.size > 0) {
+            const attachment = message.attachments.first();
+            if (attachment.contentType?.startsWith("image/")) {
+              imageUrl = attachment.url;
+            } else {
+              await interaction.followUp({
+                content: "❌ O arquivo enviado não é uma imagem válida.",
+                ephemeral: true,
+              });
+              return;
             }
-    
-            if (imageUrl) {
-                console.log(`Imagem recebida: ${imageUrl}`);
-                await interaction.followUp({ content: "✅ Imagem recebida com sucesso!", ephemeral: true });
-                collector.stop(); // Para o coletor após receber a imagem
+          }
+          // Verificar embeds de imagem
+          else if (message.embeds.length > 0) {
+            const imageEmbed = message.embeds.find(
+              (embed) => embed.image || embed.thumbnail
+            );
+            if (imageEmbed) {
+              imageUrl = imageEmbed.image?.url || imageEmbed.thumbnail?.url;
             }
+          }
+          // Verificar links diretos de imagem
+          else {
+            const imageUrlPattern = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif))/i;
+            const match = message.content.match(imageUrlPattern);
+            if (match) {
+              imageUrl = match[0];
+            }
+          }
+
+          if (imageUrl) {
+            console.log(`Imagem recebida: ${imageUrl}`);
+            await interaction.followUp({
+              content: "✅ Imagem recebida com sucesso!",
+              ephemeral: true,
+            });
+            collector.stop(); // Para o coletor após receber a imagem
+          }
         });
-    
+
         collector.on("end", async (collected) => {
-            if (collected.size === 0) {
-                await interaction.followUp({ content: "❌ Tempo esgotado. Nenhuma imagem foi enviada.", ephemeral: true });
-            }
+          if (collected.size === 0) {
+            await interaction.followUp({
+              content: "❌ Tempo esgotado. Nenhuma imagem foi enviada.",
+              ephemeral: true,
+            });
+          }
         });
-    }       
-  }
+      }
+    }
 
     // Processa modais
     if (interaction.isModalSubmit()) {
