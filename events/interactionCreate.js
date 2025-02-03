@@ -18,7 +18,6 @@ const fs = require("fs");
 const path = require("path");
 const { webhookId, webhookToken, tagMembers } = require("../config.json");
 const webhookClient = new WebhookClient({ id: webhookId, token: webhookToken });
-const webhookClientRecibo = new WebhookClient({id: webhookReciboId, token: webhookReciboToken})
 const { webhookReciboId, webhookReciboToken } = require("../config.json")
 
 const collectorMessage = new Collection();
