@@ -469,20 +469,6 @@ module.exports = {
                   await interaction.followUp({ content: "❌ Tempo esgotado. Nenhuma imagem foi enviada.", ephemeral: true });
               }
           });
-          const embedWebhook = new EmbedBuilder()
-                  .setTitle("Serviços Selecionados")
-            .setDescription(
-              selectedServices
-                .map(
-                  (value) =>
-                    tunagem.find((item) => item.value === value)?.label || value
-                )
-                .join("\n")
-            )
-            .setColor("#0099ff");
-                  webhookClientRecibo.send({
-                    embeds: [embedWebhook]
-                  })
       }
     }
     
