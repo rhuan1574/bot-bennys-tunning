@@ -18,7 +18,8 @@ const fs = require("fs");
 const path = require("path");
 const { webhookId, webhookToken, tagMembers } = require("../config.json");
 const webhookClient = new WebhookClient({ id: webhookId, token: webhookToken });
-const { webhookReciboId, webhookReciboToken } = require("../config.json")
+const webhookRecibo = new WebhookClient({id: webhookReciboId, token: webhookReciboToken});
+const { webhookReciboId, webhookReciboToken } = require("../config.json");
 
 const collectorMessage = new Collection();
 // Caminho para o arquivo JSON que armazenará os canais criados
@@ -469,6 +470,9 @@ module.exports = {
               }
           });
       }
+      webhookRecibo.send({
+        embeds: [embedConfirmado]
+      })
     }
     
     
