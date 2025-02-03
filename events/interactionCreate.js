@@ -458,7 +458,18 @@ module.exports = {
               if (imageUrl) {
                   console.log(`Imagem recebida: ${imageUrl}`);
                   await interaction.followUp({ content: "✅ Imagem recebida com sucesso! Seu recibo será enviado em breve!", ephemeral: true });
-                  const embedWebhook = new EmbedBuilder()
+                  
+                  collector.stop(); // Para o coletor após receber a imagem
+                  
+              }
+          });
+      
+          collector.on("end", async (collected) => {
+              if (collected.size === 0) {
+                  await interaction.followUp({ content: "❌ Tempo esgotado. Nenhuma imagem foi enviada.", ephemeral: true });
+              }
+          });
+          const embedWebhook = new EmbedBuilder()
                   .setTitle("Serviços Selecionados")
             .setDescription(
               selectedServices
@@ -472,16 +483,6 @@ module.exports = {
                   webhookClientRecibo.send({
                     embeds: [embedWebhook]
                   })
-                  collector.stop(); // Para o coletor após receber a imagem
-                  
-              }
-          });
-      
-          collector.on("end", async (collected) => {
-              if (collected.size === 0) {
-                  await interaction.followUp({ content: "❌ Tempo esgotado. Nenhuma imagem foi enviada.", ephemeral: true });
-              }
-          });
       }
     }
     
