@@ -365,8 +365,7 @@ module.exports = {
           console.log("Coletor encerrado.");
         });
       }
-
-      else if (customId === "confirmar") {
+      if (customId === "confirmar") {
         const embedConfirmado = new EmbedBuilder()
             .setTitle("Recibo gerado")
             .setDescription("Seu recibo foi gerado. Para enviar, selecione o botão abaixo e envie o print do comprovante.")
@@ -475,8 +474,6 @@ module.exports = {
         embeds: [embedConfirmado]
       })
     }
-    
-    
     }
 
     // Processa modais
