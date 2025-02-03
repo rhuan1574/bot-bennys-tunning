@@ -363,140 +363,108 @@ module.exports = {
 
       if (customId === "confirmar") {
         const embedConfirmado = new EmbedBuilder()
-          .setTitle("Recibo gerado")
-          .setDescription(
-            "Seu recibo foi gerado. Para enviar, selecione o botão abaixo e envie o print do comprovante."
-          )
-          .setColor("Aqua")
-          .setTimestamp();
-
+            .setTitle("Recibo gerado")
+            .setDescription("Seu recibo foi gerado. Para enviar, selecione o botão abaixo e envie o print do comprovante.")
+            .setColor('Aqua')
+            .setTimestamp();
+    
         const buttonImagem = new ButtonBuilder()
-          .setCustomId("enviar_imagem")
-          .setLabel("Enviar imagem")
-          .setStyle(ButtonStyle.Success);
-
-        const rowConfirmado = new ActionRowBuilder().addComponents(
-          buttonImagem
-        );
-
+            .setCustomId("enviar_imagem")
+            .setLabel("Enviar imagem")
+            .setStyle(ButtonStyle.Success);
+    
+        const rowConfirmado = new ActionRowBuilder().addComponents(buttonImagem);
+        
         await interaction.reply({
-          embeds: [embedConfirmado],
-          components: [rowConfirmado],
+            embeds: [embedConfirmado],
+            components: [rowConfirmado],
         });
-      }
-
-      if (customId === "enviar_imagem") {
+    }
+    
+    if (customId === "enviar_imagem") {
         if (!interaction.channel) {
-          return interaction.reply({
-            content: "Erro: Não consigo acessar este canal.",
-            ephemeral: true,
-          });
+            return interaction.reply({ content: "Erro: Não consigo acessar este canal.", ephemeral: true });
         }
-
+    
         // Verificar permissões do bot
-        if (
-          !interaction.channel
-            .permissionsFor(interaction.client.user)
-            .has(["VIEW_CHANNEL", "READ_MESSAGE_HISTORY"])
-        ) {
-          return interaction.reply({
-            content: "❌ Não tenho permissões para ler mensagens neste canal.",
-            ephemeral: true,
-          });
+        if (!interaction.channel.permissionsFor(interaction.client.user).has(['VIEW_CHANNEL', 'READ_MESSAGE_HISTORY'])) {
+            return interaction.reply({ content: "❌ Não tenho permissões para ler mensagens neste canal.", ephemeral: true });
         }
-
+    
         // Adiar a resposta para evitar erro de timeout
         await interaction.deferReply({ ephemeral: true });
-
+    
         // Desabilitar o botão após clicar
-        const buttonImagemDesativado = ButtonBuilder.from(
-          interaction.message.components[0].components[0]
-        ).setDisabled(true);
-        const rowAtualizado = new ActionRowBuilder().addComponents(
-          buttonImagemDesativado
-        );
-
+        const buttonImagemDesativado = ButtonBuilder.from(interaction.message.components[0].components[0]).setDisabled(true);
+        const rowAtualizado = new ActionRowBuilder().addComponents(buttonImagemDesativado);
+    
         await interaction.editReply({
-          content: "📤 Envie uma imagem neste canal.",
-          components: [rowAtualizado],
+            content: "📤 Envie uma imagem neste canal.",
+            components: [rowAtualizado],
         });
-
+    
         // Filtro para capturar mensagens com anexos de imagem, embeds ou links diretos de imagem
         const filter = (m) => {
-          const isAuthor = m.author.id === interaction.user.id;
-          const hasImageAttachment = m.attachments.some((att) =>
-            att.contentType?.startsWith("image/")
-          );
-          const hasImageEmbed = m.embeds.some(
-            (embed) => embed.image || embed.thumbnail
-          );
-          const imageUrlPattern = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif))/i;
-          const hasImageLink = imageUrlPattern.test(m.content);
-
-          return (
-            isAuthor && (hasImageAttachment || hasImageEmbed || hasImageLink)
-          );
-        };
-
-        // Criando o coletor (expira em 2 minutos)
-        const collector = interaction.channel.createMessageCollector({
-          filter,
-          time: 120_000,
-        });
-
-        collector.on("collect", async (message) => {
-          let imageUrl = null;
-
-          // Verificar anexos de imagem
-          if (message.attachments.size > 0) {
-            const attachment = message.attachments.first();
-            if (attachment.contentType?.startsWith("image/")) {
-              imageUrl = attachment.url;
-            } else {
-              await interaction.followUp({
-                content: "❌ O arquivo enviado não é uma imagem válida.",
-                ephemeral: true,
-              });
-              return;
-            }
-          }
-          // Verificar embeds de imagem
-          else if (message.embeds.length > 0) {
-            const imageEmbed = message.embeds.find(
-              (embed) => embed.image || embed.thumbnail
-            );
-            if (imageEmbed) {
-              imageUrl = imageEmbed.image?.url || imageEmbed.thumbnail?.url;
-            }
-          }
-          // Verificar links diretos de imagem
-          else {
+            const isAuthor = m.author.id === interaction.user.id;
+            const hasImageAttachment = m.attachments.some(att => att.contentType?.startsWith("image/"));
+            const hasImageEmbed = m.embeds.some(embed => embed.image || embed.thumbnail);
             const imageUrlPattern = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif))/i;
-            const match = message.content.match(imageUrlPattern);
-            if (match) {
-              imageUrl = match[0];
+            const hasImageLink = imageUrlPattern.test(m.content);
+    
+            console.log("Mensagem recebida:", m.content);
+            console.log("Anexos:", m.attachments.size);
+            console.log("Embeds:", m.embeds.length);
+    
+            return isAuthor && (hasImageAttachment || hasImageEmbed || hasImageLink);
+        };
+    
+        // Criando o coletor (expira em 2 minutos)
+        const collector = interaction.channel.createMessageCollector({ filter, time: 120_000 });
+    
+        collector.on("collect", async (message) => {
+            let imageUrl = null;
+    
+            // Verificar anexos de imagem
+            if (message.attachments.size > 0) {
+                const attachment = message.attachments.first();
+                if (attachment.contentType?.startsWith("image/")) {
+                    imageUrl = attachment.url;
+                } else {
+                    await interaction.followUp({ content: "❌ O arquivo enviado não é uma imagem válida.", ephemeral: true });
+                    return;
+                }
             }
-          }
-
-          if (imageUrl) {
-            console.log(`Imagem recebida: ${imageUrl}`);
-            await interaction.followUp({
-              content: "✅ Imagem recebida com sucesso!",
-              ephemeral: true,
-            });
-            collector.stop(); // Para o coletor após receber a imagem
-          }
+            // Verificar embeds de imagem
+            else if (message.embeds.length > 0) {
+                const imageEmbed = message.embeds.find(embed => embed.image || embed.thumbnail);
+                if (imageEmbed) {
+                    imageUrl = imageEmbed.image?.url || imageEmbed.thumbnail?.url;
+                } else {
+                    console.log("Embed encontrado, mas sem imagem ou thumbnail:", message.embeds);
+                }
+            }
+            // Verificar links diretos de imagem
+            else {
+                const imageUrlPattern = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif))/i;
+                const match = message.content.match(imageUrlPattern);
+                if (match) {
+                    imageUrl = match[0];
+                }
+            }
+    
+            if (imageUrl) {
+                console.log(`Imagem recebida: ${imageUrl}`);
+                await interaction.followUp({ content: "✅ Imagem recebida com sucesso!", ephemeral: true });
+                collector.stop(); // Para o coletor após receber a imagem
+            }
         });
-
+    
         collector.on("end", async (collected) => {
-          if (collected.size === 0) {
-            await interaction.followUp({
-              content: "❌ Tempo esgotado. Nenhuma imagem foi enviada.",
-              ephemeral: true,
-            });
-          }
+            if (collected.size === 0) {
+                await interaction.followUp({ content: "❌ Tempo esgotado. Nenhuma imagem foi enviada.", ephemeral: true });
+            }
         });
-      }
+    }
     }
 
     // Processa modais
