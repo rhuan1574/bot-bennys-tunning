@@ -400,7 +400,9 @@ module.exports = {
                   embeds: [embedRecebido],
                 })
 
-                we
+                webhookClientRegistro.send({
+                  embeds: [embedRecebido],
+                })
                 // Espera 5 segundos antes de apagar a mensagem
                 setTimeout(() => {
                   message.delete().catch(console.error); // Apaga a mensagem com a imagem
