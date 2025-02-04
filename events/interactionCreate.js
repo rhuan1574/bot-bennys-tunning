@@ -16,10 +16,27 @@ const {
 const fs = require("fs");
 const path = require("path");
 
-const { webhookReciboId, webhookReciboToken, tagMembers, webhookLogReciboId, webhookLogReciboToken, webhookLogRegistroId, webhookLogRegistroToken } = require("../config.json");
-const webhookClientRecibo = new WebhookClient({ id: webhookReciboId, token: webhookReciboToken });
-const webhookClientLog = new WebhookClient({ id: webhookLogReciboId, token: webhookLogReciboToken });
-const webhookClientRegistro = new WebhookClient({ id: webhookLogRegistroId, token: webhookLogRegistroToken });
+const {
+  webhookReciboId,
+  webhookReciboToken,
+  tagMembers,
+  webhookLogReciboId,
+  webhookLogReciboToken,
+  webhookLogRegistroId,
+  webhookLogRegistroToken,
+} = require("../config.json");
+const webhookClientRecibo = new WebhookClient({
+  id: webhookReciboId,
+  token: webhookReciboToken,
+});
+const webhookClientLog = new WebhookClient({
+  id: webhookLogReciboId,
+  token: webhookLogReciboToken,
+});
+const webhookClientRegistro = new WebhookClient({
+  id: webhookLogRegistroId,
+  token: webhookLogRegistroToken,
+});
 const tunagem = [
   {
     label: "Motor 1 🔧",
@@ -318,7 +335,7 @@ module.exports = {
         await interaction.reply({
           embeds: [embed],
           components: [rowSelect, rowButton],
-          ephemeral: true,
+          flags: 64,
         });
 
         const filter = (i) =>
@@ -394,15 +411,15 @@ module.exports = {
                 await interaction.followUp({
                   content: "Imagem recebida com sucesso!",
                   embeds: [embedRecebido],
-                  ephemeral: true,
+                  flags: 64,
                 });
                 webhookClientRecibo.send({
                   embeds: [embedRecebido],
-                })
+                });
                 webhookClientLog.send({
                   embeds: [embedRecebido],
-                })
-                
+                });
+
                 // Espera 5 segundos antes de apagar a mensagem
                 setTimeout(() => {
                   message.delete().catch(console.error); // Apaga a mensagem com a imagem
@@ -415,16 +432,12 @@ module.exports = {
               if (collected.size === 0) {
                 interaction.followUp({
                   content: "Tempo esgotado! Nenhuma imagem foi enviada.",
-                  ephemeral: true,
+                  flags: 64,
                 });
               }
             });
           }
         });
-      }
-
-      // Lógica para envio da imagem
-      if (customId === "enviar_imagem") {
       }
     }
 
