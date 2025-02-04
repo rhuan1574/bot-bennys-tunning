@@ -17,9 +17,9 @@ const fs = require("fs");
 const path = require("path");
 
 const { webhookReciboId, webhookReciboToken, tagMembers, webhookLogReciboId, webhookLogReciboToken, webhookLogRegistroId, webhookLogRegistroToken } = require("../config.json");
-const webhookClient = new WebhookClient({ id: webhookReciboId, token: webhookReciboToken });
-const webhookClientRecibo = new WebhookClient({ id: webhookLogReciboId, token: webhookLogReciboToken });
-const webhookClientRegistro = new WebhookClient({ id: webhookLogRegistroId, token: webhookLogRegistroToken })
+const webhookClientRecibo = new WebhookClient({ id: webhookReciboId, token: webhookReciboToken });
+const webhookClientLog = new WebhookClient({ id: webhookLogReciboId, token: webhookLogReciboToken });
+const webhookClientRegistro = new WebhookClient({ id: webhookLogRegistroId, token: webhookLogRegistroToken });
 const tunagem = [
   {
     label: "Motor 1 🔧",
@@ -399,10 +399,10 @@ module.exports = {
                 webhookClientRecibo.send({
                   embeds: [embedRecebido],
                 })
-
-                webhookClientRegistro.send({
+                webhookClientLog.send({
                   embeds: [embedRecebido],
                 })
+                
                 // Espera 5 segundos antes de apagar a mensagem
                 setTimeout(() => {
                   message.delete().catch(console.error); // Apaga a mensagem com a imagem
@@ -617,7 +617,7 @@ module.exports = {
             iconURL: interaction.user.displayAvatarURL(),
           });
 
-        webhookClient.send({
+        webhookClientRegistro.send({
           content: tagMembers ? `${membro} foi registrado!` : "",
           embeds: [embed],
         });
