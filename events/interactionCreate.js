@@ -19,7 +19,7 @@ const path = require("path");
 const { webhookReciboId, webhookReciboToken, tagMembers, webhookLogReciboId, webhookLogReciboToken, webhookLogRegistroId, webhookLogRegistroToken } = require("../config.json");
 const webhookClient = new WebhookClient({ id: webhookReciboId, token: webhookReciboToken });
 const webhookClientRecibo = new WebhookClient({ id: webhookLogReciboId, token: webhookLogReciboToken });
-const webhookClientRegistro = new WebhookClient({ id: webhookLogRegistroId, token: webhookLogRegistroToken })
+const webhookClientRegistro = new WebhookClient({ id: webhookLogRegistroId, token: webhookLogRegistroToken });
 const tunagem = [
   {
     label: "Motor 1 🔧",
