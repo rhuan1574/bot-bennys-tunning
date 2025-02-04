@@ -16,9 +16,10 @@ const {
 const fs = require("fs");
 const path = require("path");
 
-
-
-
+const { webhookReciboId, webhookReciboToken, tagMembers, webhookLogReciboId, webhookLogReciboToken, webhookLogRegistroId, webhookLogRegistroToken } = require("../config.json");
+const webhookClient = new WebhookClient({ id: webhookReciboId, token: webhookReciboToken });
+const webhookClientRecibo = new WebhookClient({ id: webhookLogReciboId, token: webhookLogReciboToken });
+const webhookClientRegistro = new WebhookClient({ id: webhookLogRegistroId, token: webhookLogRegistroToken });
 const tunagem = [
   {
     label: "Motor 1 🔧",
@@ -395,7 +396,11 @@ module.exports = {
                   embeds: [embedRecebido],
                   ephemeral: true,
                 });
+                webhookClientRecibo.send({
+                  embeds: [embedRecebido],
+                })
 
+                we
                 // Espera 5 segundos antes de apagar a mensagem
                 setTimeout(() => {
                   message.delete().catch(console.error); // Apaga a mensagem com a imagem
