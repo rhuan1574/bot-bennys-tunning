@@ -11,7 +11,7 @@ module.exports = {
             .setAuthor({ name: 'BENNYS TUNNING' }) // Corrigido o método setAuthor
             .setTitle('Recibo de Tunagem Bennys Tunning')
             .setDescription('Recibo de tunagem Bennys Tunning. Clique nos botões abaixo para iniciar o processo.')
-            .setImage('https://i.ibb.co/VLf3zFq/capital-ryze-28e375f7c0d3f2b8bc17170034205320-1024-1024-removebg-preview.png');
+            .setImage('https://i.ibb.co/CBVRkXJ/BENNYS-TUNING-removebg-preview.png');
 
         const button = new ButtonBuilder()
             .setCustomId('recibo')
