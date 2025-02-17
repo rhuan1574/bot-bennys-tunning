@@ -567,51 +567,38 @@ module.exports = {
           });
         }
       } else if (customId === "modal-registro") {
+        await interaction.deferReply({ ephemeral: true });
+    
         const nomeRegistro = interaction.fields.getTextInputValue("nome_prsn");
-        const nomeReal = interaction.fields.getTextInputValue("nome");
-        const nomeIndicacao =
-          interaction.fields.getTextInputValue("nome_indicacao");
         const idRegistro = interaction.fields.getTextInputValue("id_prsn");
-
         const membro = interaction.guild.members.cache.get(interaction.user.id);
-
-        if (membro) {
-          try {
+    
+        if (!membro) {
+            return interaction.editReply({ content: "❌ Membro não encontrado no servidor." });
+        }
+    
+        try {
             await membro.setNickname(`${nomeRegistro} | ${idRegistro}`);
-            await interaction.reply({
-              content: `✅ O apelido foi atualizado para: ${nomeRegistro} | ${idRegistro} e recebeu o cargo de 🧰 | Membro Benny's`,
-              flags: 64,
-            });
-          } catch (error) {
+        } catch (error) {
             console.error(error);
-            await interaction.reply({
-              content:
-                "❌ Não foi possível alterar o apelido. Verifique minhas permissões.",
-              flags: 64,
-            });
-          }
-        } else {
-          await interaction.reply({
-            content: "❌ Membro não encontrado no servidor.",
-            flags: 64,
-          });
+            return interaction.editReply({ content: "❌ Não foi possível alterar o apelido. Verifique minhas permissões." });
         }
-
-        const cargo = interaction.guild.roles.cache.find(
-          (role) => role.name === "🧰 | Membro Benny's"
-        );
-
+    
+        const cargo = interaction.guild.roles.cache.find(role => role.name === "🧰 | Membro Benny's");
+        
         if (cargo) {
-          try {
-            await membro.roles.add(cargo);
-          } catch (error) {
-            console.error(error);
-            await interaction.reply({
-              content: "❌ Não foi possível atribuir o cargo.",
-              flags: 64,
-            });
-          }
+            try {
+                await membro.roles.add(cargo);
+            } catch (error) {
+                console.error(error);
+                return interaction.editReply({ content: "❌ Não foi possível atribuir o cargo." });
+            }
         }
+    
+        interaction.editReply({
+            content: `✅ O apelido foi atualizado para: ${nomeRegistro} | ${idRegistro} e recebeu o cargo de 🧰 | Membro Benny's`
+        });
+  
 
         const embed = new EmbedBuilder()
           .setColor("#FF0000")
