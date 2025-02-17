@@ -567,7 +567,7 @@ module.exports = {
           });
         }
       } else if (customId === "modal-registro") {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: 64 });
     
         const nomeRegistro = interaction.fields.getTextInputValue("nome_prsn");
         const idRegistro = interaction.fields.getTextInputValue("id_prsn");
