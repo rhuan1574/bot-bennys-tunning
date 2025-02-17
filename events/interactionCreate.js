@@ -423,7 +423,7 @@ module.exports = {
                 // Espera 5 segundos antes de apagar a mensagem
                 setTimeout(() => {
                   message.delete().catch(console.error); // Apaga a mensagem com a imagem
-                }, 5000);
+                }, 10000);
                 collector.stop();
               }
             });
