@@ -571,6 +571,8 @@ module.exports = {
     
         const nomeRegistro = interaction.fields.getTextInputValue("nome_prsn");
         const idRegistro = interaction.fields.getTextInputValue("id_prsn");
+        const nomeReal = interaction.fields.getTextInputValue("nome");
+        const nomeIndicacao = interaction.fields.getTextInputValue("nome_indicacao");
         const membro = interaction.guild.members.cache.get(interaction.user.id);
     
         if (!membro) {
