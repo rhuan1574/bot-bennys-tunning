@@ -4,7 +4,7 @@ require('dotenv').config(); // Garante que o .env seja carregado
 async function connectToDatabase() {
     try {
         if (!process.env.MONGO_URI) {
-            throw new Error("A variável MONGO_URI não está definida no .env!");
+            throw new Error("A variável MONGO_URI não está definida no .env!!");
         }
 
         await mongoose.connect(process.env.MONGO_URI, {
