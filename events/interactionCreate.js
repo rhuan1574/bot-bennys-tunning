@@ -548,7 +548,7 @@ module.exports = {
         await interaction.reply({
           content: "🔍 **Escolha os itens ilegais que deseja catalogar:**",
           components: [rowSelect, rowButton],
-          ephemeral: true,
+          flags: 64,
         });
 
         const selectedItems = new Map();
@@ -603,7 +603,7 @@ module.exports = {
               return i.reply({
                 content:
                   "❌ **Nenhum item ilegal foi selecionado.** Selecione pelo menos um item antes de confirmar.",
-                ephemeral: true,
+                  flags: 64,
               });
             }
 
@@ -708,14 +708,14 @@ module.exports = {
 
                 await modalInteraction.reply({
                   content: "✅ **Item catalogado com sucesso!**",
-                  ephemeral: true,
+                  flags: 64,
                 });
               })
               .catch(() => {
                 i.followUp({
                   content:
                     "⏳ **Tempo esgotado!** O modal foi fechado sem resposta.",
-                  ephemeral: true,
+                    flags: 64,
                 });
               });
           }
@@ -931,7 +931,7 @@ module.exports = {
           return interaction.reply({
             content:
               "❌ Insira um número válido para a quantidade de itens ilegais.",
-            ephemeral: true,
+              flags: 64,
           });
         }
 
@@ -941,7 +941,7 @@ module.exports = {
         if (!selectedServices || selectedServices.length === 0) {
           return interaction.reply({
             content: "❌ Nenhum item ilegal foi selecionado.",
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -950,7 +950,7 @@ module.exports = {
         if (!item) {
           return interaction.reply({
             content: "❌ Item ilegal não encontrado.",
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -974,7 +974,7 @@ module.exports = {
 
         await interaction.reply({
           content: "✅ Item ilegal catalogado com sucesso!",
-          ephemeral: true,
+          flags: 64,
         });
       }
     }

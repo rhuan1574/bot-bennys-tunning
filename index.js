@@ -1,5 +1,6 @@
 require('dotenv').config();
-console.log("MONGO_URI:", process.env.MONGO_URI); // Verifica se a URI está definida
+
+
  // Carregar as variáveis de ambiente antes de usar o token
 
 const fs = require('node:fs');
