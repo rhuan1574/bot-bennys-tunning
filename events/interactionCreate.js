@@ -976,48 +976,6 @@ module.exports = {
           content: "✅ Item ilegal catalogado com sucesso!",
           flags: 64,
         });
-      } else if (customId === "catalogar_itens") {
-        const qtd = interaction.fields.getTextInputValue("quantidade_itens");
-        const tipo = interaction.fields.getTextInputValue("tipo_item");
-
-        const selectedServices = interaction.client.selectedItems[
-          interaction.user.id
-        ];
-
-        if (!selectedServices || selectedServices.length === 0) {
-          return interaction.reply({
-            content: "❌ Nenhum item ilegal foi selecionado.",
-            flags: 64,
-          });
-        }
-
-        const item = itensIlegais.find(
-          (it) => it.value === selectedServices[0]
-        );
-
-        const embed = new EmbedBuilder()
-          .setColor("Green")
-          .setTitle("Item Ilegal Catalogado")
-          .addFields([
-            { name: "Item", value: item?.label || "Desconhecido" },
-            { name: "Quantidade", value: qtd },
-            { name: "Tipo", value: tipo },
-          ])
-          .setFooter({
-            text: `Catalogado por ${interaction.user.tag}`,
-            iconURL: interaction.user.displayAvatarURL(),
-          })
-          .setTimestamp();
-
-        webhookClientReciboIlegal.send({
-          content: `${interaction.user} catalogou um item ilegal!`,
-          embeds: [embed],
-        });
-
-        await interaction.reply({
-          content: "✅ Item ilegal catalogado com sucesso!",
-          flags: 64,
-        });
       }
     }
   },
