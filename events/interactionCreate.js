@@ -603,33 +603,44 @@ module.exports = {
               return i.reply({
                 content:
                   "❌ **Nenhum item ilegal foi selecionado.** Selecione pelo menos um item antes de confirmar.",
-                  flags: 64,
+                flags: 64,
               });
             }
 
             setTimeout(async () => {
-              const modalDrogas = new ModalBuilder()
-                .setCustomId("catalogar_itens")
-                .setTitle("📦 Catalogar Itens Ilegais");
-
-              const inputQuantidade = new TextInputBuilder()
-                .setCustomId("quantidade_itens")
-                .setLabel("📊 Quantidade de Itens:")
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true);
-
-              const inputTipo = new TextInputBuilder()
-                .setCustomId("tipo_item")
-                .setLabel("📌 Tipo de Item:")
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true);
-
-              modalDrogas.addComponents(
-                new ActionRowBuilder().addComponents(inputQuantidade),
-                new ActionRowBuilder().addComponents(inputTipo)
-              );
-
+              console.log("🔹 Exibindo modal...");
               await i.showModal(modalDrogas);
+              console.log("✅ Modal exibido com sucesso!");
+
+              const modalFilter = (modalI) =>
+                modalI.customId === "catalogar_itens";
+
+              i.awaitModalSubmit({ filter: modalFilter, time: 120_000 })
+                .then(async (modalInteraction) => {
+                  console.log("✅ Modal submetido com sucesso!");
+
+                  const qtd =
+                    modalInteraction.fields.getTextInputValue(
+                      "quantidade_itens"
+                    );
+                  const tipo =
+                    modalInteraction.fields.getTextInputValue("tipo_item");
+
+                  console.log(`📦 Quantidade: ${qtd}, Tipo: ${tipo}`);
+
+                  await modalInteraction.reply({
+                    content: "✅ **Item catalogado com sucesso!**",
+                    flags: 64,
+                  });
+                })
+                .catch((error) => {
+                  console.error("❌ Erro ao processar o modal:", error);
+                  i.followUp({
+                    content:
+                      "⏳ **Tempo esgotado ou erro interno!** O modal foi fechado sem resposta.",
+                    flags: 64,
+                  });
+                });
             }, 1000);
 
             const modalFilter = (interaction) =>
@@ -715,7 +726,7 @@ module.exports = {
                 i.followUp({
                   content:
                     "⏳ **Tempo esgotado!** O modal foi fechado sem resposta.",
-                    flags: 64,
+                  flags: 64,
                 });
               });
           }
@@ -931,7 +942,7 @@ module.exports = {
           return interaction.reply({
             content:
               "❌ Insira um número válido para a quantidade de itens ilegais.",
-              flags: 64,
+            flags: 64,
           });
         }
 
