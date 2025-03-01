@@ -24,6 +24,8 @@ const {
   webhookLogReciboToken,
   webhookLogRegistroId,
   webhookLogRegistroToken,
+  webhookLogReciboIlegalId,
+  webhookLogReciboIlegalToken,
 } = require("../config.json");
 const webhookClientRecibo = new WebhookClient({
   id: webhookReciboId,
@@ -36,6 +38,11 @@ const webhookClientLog = new WebhookClient({
 const webhookClientRegistro = new WebhookClient({
   id: webhookLogRegistroId,
   token: webhookLogRegistroToken,
+});
+
+const webhookClientReciboIlegal = new WebhookClient({
+  id: webhookLogReciboIlegalId,
+  token: webhookLogReciboIlegalToken,
 });
 const tunagem = [
   {
@@ -145,6 +152,73 @@ const tunagem = [
     value: "blindagem_100",
   },
 ];
+
+const itensIlegais = [
+  {
+    label: "Drogas 🚬",
+    description: "Para catalogar drogas compradas ou vendidas",
+    value: "drogas",
+  },
+  {
+    label: "Armas 🔫",
+    description: "Para catalogar armas compradas ou vendidas",
+    value: "armas",
+  },
+  {
+    label: "Munição 🔫",
+    description: "Motor Nível 1",
+    value: "motor_1",
+  },
+  {
+    label: "Placas 🪧",
+    description: "Para catalogar placas vendidas",
+    value: "placas",
+  },
+  {
+    label: "MasterPick 🪛",
+    description: "Para catalogar MasterPick vendidos",
+    value: "masterpick",
+  },
+
+  {
+    label: "Itens Ilegais 📦",
+    description: "Para catalogar itens ilegais comprados",
+    value: "itens_ilegais",
+  },
+  {
+    label: "Dinheiro Sujo 💸",
+    description: "Para catalogar dinheiro sujo",
+    value: "dinheiro_sujo",
+  },
+];
+
+const tipoItens = [
+  { label: "AK-47", value: "ak-47" },
+  { label: "M-TAR", value: "m-tar" },
+  { label: "G3", value: "g3" },
+  { label: "Five-Seven", value: "five-seven" },
+  { label: "Thompson", value: "thompson" },
+  { label: "Munição 5mm", value: "municao-5mm" },
+  { label: "Munição 9mm", value: "municao-9mm" },
+  { label: "Munição 762mm", value: "municao-762mm" },
+  { label: "Farinha", value: "farinha" },
+  { label: "Meta", value: "meta" },
+  { label: "Erva", value: "Erva" },
+  { label: "Skunk", value: "skunk" },
+  { label: "Rapé", value: "rape" },
+  { label: "Lança-perfume", value: "lanca-perfume" },
+  { label: "Viagra", value: "viagra" },
+  { label: "Balinha", value: "balinha" },
+  { label: "Flipper MK1", value: "flipper-mk1" },
+  { label: "Flipper MK2", value: "flipper-mk2" },
+  { label: "Flipper MK3", value: "flipper-mk3" },
+  { label: "Flipper MK4", value: "flipper-mk4" },
+  { label: "Flipper MK5", value: "flipper-mk5" },
+  { label: "Chave de Ouro", value: "chave-de-ouro" },
+  { label: "Chave de Platina", value: "chave-de-platina" },
+
+];
+let description;
 // Caminho para o arquivo JSON que armazenará os canais criados
 const CHANNELS_FILE = path.resolve(__dirname, "channels.json");
 
@@ -390,7 +464,7 @@ module.exports = {
               m.author.id === interaction.user.id && m.attachments.size > 0;
             const collector = interaction.channel.createMessageCollector({
               filter,
-              time: 60_000,
+              time: 120_000,
             });
 
             collector.on("collect", async (message) => {
@@ -436,6 +510,109 @@ module.exports = {
                 });
               }
             });
+          }
+        });
+      }
+      let selectedServicesGlobalBau = []; // Armazena globalmente as opções selecionadas
+      if (customId === "reciboBau") {
+        const selectMenuBau = new StringSelectMenuBuilder()
+          .setCustomId("itens_ilegais_menu")
+          .setMinValues(1)
+          .setMaxValues(6) // Permitir até 6 seleções
+          .setPlaceholder("Selecione até 6 serviços...")
+          .addOptions(
+            itensIlegais.map((item) =>
+              new StringSelectMenuOptionBuilder()
+                .setLabel(item.label)
+                .setDescription(item.description)
+                .setValue(item.value)
+            )
+          );
+
+        const buttonConfirma = new ButtonBuilder()
+          .setCustomId("confirmar_bau")
+          .setLabel("Confirmar")
+          .setStyle(ButtonStyle.Success)
+          .setEmoji("✅");
+
+        const rowSelect = new ActionRowBuilder().addComponents(selectMenuBau);
+        const rowButton = new ActionRowBuilder().addComponents(buttonConfirma);
+
+        await interaction.reply({
+          content: "Selecione os itens ilegais que deseja catalogar:",
+          components: [rowSelect, rowButton],
+          ephemeral: true, // Deixa a resposta privada para o usuário
+        });
+
+        const filter = (i) =>
+          ["itens_ilegais_menu", "confirmar_bau"].includes(i.customId) &&
+          i.user.id === interaction.user.id;
+
+        const componentCollector =
+          interaction.channel.createMessageComponentCollector({
+            filter,
+            time: 30_000,
+          });
+
+        componentCollector.on("collect", async (i) => {
+          if (i.customId === "itens_ilegais_menu") {
+            interaction.client.selectedItems =
+              interaction.client.selectedItems || {};
+            interaction.client.selectedItems[interaction.user.id] = i.values;
+
+            const descriptionEmbedBau =
+              i.values
+                .map(
+                  (value) =>
+                    itensIlegais.find((item) => item.value === value)?.label ||
+                    "Serviço desconhecido"
+                )
+                .join("\n") || "Nenhum serviço selecionado.";
+
+            const updatedEmbed = new EmbedBuilder()
+              .setTitle("Itens Ilegais Selecionados")
+              .setDescription(descriptionEmbedBau)
+              .setColor("#0099ff");
+
+            await i.update({
+              embeds: [updatedEmbed],
+              components: [rowSelect, rowButton],
+            });
+          } else if (i.customId === "confirmar_bau") {
+            const selectedServices =
+              interaction.client.selectedItems[interaction.user.id];
+
+            if (!selectedServices || selectedServices.length === 0) {
+              return i.reply({
+                content:
+                  "❌ Nenhum item ilegal foi selecionado. Selecione pelo menos um item antes de confirmar.",
+                ephemeral: true,
+              });
+            }
+
+            const modalDrogas = new ModalBuilder()
+              .setCustomId("modal-drogas")
+              .setTitle("Catalogar Itens Ilegais");
+
+            const input = new TextInputBuilder()
+              .setCustomId("item_ilegal")
+              .setLabel("Insira a quantidade de itens:")
+              .setStyle(TextInputStyle.Short)
+              .setRequired(true);
+
+            const inputTipo = new TextInputBuilder()
+              .setCustomId("item_ilegal")
+              .setLabel("Insira o tipo de item a catalogar:")
+              .setStyle(TextInputStyle.Short)
+              .setRequired(true);
+
+            const actionRow = new ActionRowBuilder().addComponents(
+              input,
+              inputTipo
+            );
+            modalDrogas.addComponents(actionRow);
+
+            await i.showModal(modalDrogas);
           }
         });
       }
@@ -568,39 +745,48 @@ module.exports = {
         }
       } else if (customId === "modal-registro") {
         await interaction.deferReply({ flags: 64 });
-    
+
         const nomeRegistro = interaction.fields.getTextInputValue("nome_prsn");
         const idRegistro = interaction.fields.getTextInputValue("id_prsn");
         const nomeReal = interaction.fields.getTextInputValue("nome");
-        const nomeIndicacao = interaction.fields.getTextInputValue("nome_indicacao");
+        const nomeIndicacao =
+          interaction.fields.getTextInputValue("nome_indicacao");
         const membro = interaction.guild.members.cache.get(interaction.user.id);
-    
+
         if (!membro) {
-            return interaction.editReply({ content: "❌ Membro não encontrado no servidor." });
+          return interaction.editReply({
+            content: "❌ Membro não encontrado no servidor.",
+          });
         }
-    
+
         try {
-            await membro.setNickname(`${nomeRegistro} | ${idRegistro}`);
+          await membro.setNickname(`${nomeRegistro} | ${idRegistro}`);
         } catch (error) {
-            console.error(error);
-            return interaction.editReply({ content: "❌ Não foi possível alterar o apelido. Verifique minhas permissões." });
+          console.error(error);
+          return interaction.editReply({
+            content:
+              "❌ Não foi possível alterar o apelido. Verifique minhas permissões.",
+          });
         }
-    
-        const cargo = interaction.guild.roles.cache.find(role => role.name === "🧰 | Membro Benny's");
-        
+
+        const cargo = interaction.guild.roles.cache.find(
+          (role) => role.name === "🧰 | Membro Benny's"
+        );
+
         if (cargo) {
-            try {
-                await membro.roles.add(cargo);
-            } catch (error) {
-                console.error(error);
-                return interaction.editReply({ content: "❌ Não foi possível atribuir o cargo." });
-            }
+          try {
+            await membro.roles.add(cargo);
+          } catch (error) {
+            console.error(error);
+            return interaction.editReply({
+              content: "❌ Não foi possível atribuir o cargo.",
+            });
+          }
         }
-    
+
         interaction.editReply({
-            content: `✅ O apelido foi atualizado para: ${nomeRegistro} | ${idRegistro} e recebeu o cargo de 🧰 | Membro Benny's`
+          content: `✅ O apelido foi atualizado para: ${nomeRegistro} | ${idRegistro} e recebeu o cargo de 🧰 | Membro Benny's`,
         });
-  
 
         const embed = new EmbedBuilder()
           .setColor("#FF0000")
@@ -622,6 +808,68 @@ module.exports = {
         webhookClientRegistro.send({
           content: tagMembers ? `${membro} foi registrado!` : "",
           embeds: [embed],
+        });
+      } else if (customId === "itens_ilegais_menu") {
+        const selectedServices = interaction.values;
+        interaction.client.selectedItems[interaction.user.id] =
+          selectedServices;
+
+        await interaction.reply({
+          content: "✅ Itens ilegais selecionados com sucesso!",
+          flags: 64,
+        });
+      } else if (customId === "modal-drogas") {
+        const itemIlegal = interaction.fields.getTextInputValue("item_ilegal");
+
+        // 🛑 Verificar se é um número válido
+        if (isNaN(itemIlegal) || parseInt(itemIlegal) <= 0) {
+          return interaction.reply({
+            content:
+              "❌ Insira um número válido para a quantidade de itens ilegais.",
+            ephemeral: true,
+          });
+        }
+
+        const selectedServices =
+          interaction.client.selectedItems[interaction.user.id];
+
+        if (!selectedServices || selectedServices.length === 0) {
+          return interaction.reply({
+            content: "❌ Nenhum item ilegal foi selecionado.",
+            ephemeral: true,
+          });
+        }
+
+        const item = itensIlegais.find((i) => i.value === selectedServices[0]);
+
+        if (!item) {
+          return interaction.reply({
+            content: "❌ Item ilegal não encontrado.",
+            ephemeral: true,
+          });
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor("Green")
+          .setTitle("Item Ilegal Catalogado")
+          .addFields([
+            { name: "Item", value: item.label },
+            { name: "Quantidade", value: itemIlegal },
+          ])
+          .setFooter({
+            text: `Catalogado por ${interaction.user.tag}`,
+            iconURL: interaction.user.displayAvatarURL(),
+          })
+          .setTimestamp();
+
+        webhookClientReciboIlegal.send({
+          content: `${interaction.user} catalogou um item ilegal!`,
+          embeds: [embed],
+        });
+
+        await interaction.reply({
+          content: "✅ Item ilegal catalogado com sucesso!",
+          ephemeral: true,
         });
       }
     }

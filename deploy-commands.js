@@ -3,15 +3,9 @@ require('dotenv').config(); // Carregar variáveis de ambiente no início do arq
 const { REST, Routes } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
+const { token, clientId, guildId } = require("./config.json");
 
 
-// Verifica se todas as variáveis estão definidas
-if (!clientId || !guildId || !token) {
-	console.error(
-		"Erro: Variáveis de ambiente CLIENT_ID, GUILD_ID ou DISCORD_TOKEN não foram definidas."
-	);
-	process.exit(1); // Interrompe a execução se variáveis estiverem faltando
-}
 
 const commands = [];
 // Pega todas as pastas de comandos do diretório "commands"
