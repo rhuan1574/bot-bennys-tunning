@@ -518,6 +518,27 @@ module.exports = {
           }
         });
       }
+      // Variável modalDrogas deve ser declarada antes para evitar erro
+      const modalDrogas = new ModalBuilder()
+        .setCustomId("catalogar_itens")
+        .setTitle("📦 Catalogar Itens Ilegais");
+
+      const inputQuantidade = new TextInputBuilder()
+        .setCustomId("quantidade_itens")
+        .setLabel("📊 Quantidade de Itens:")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
+
+      const inputTipo = new TextInputBuilder()
+        .setCustomId("tipo_item")
+        .setLabel("📌 Tipo de Item:")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
+
+      modalDrogas.addComponents(
+        new ActionRowBuilder().addComponents(inputQuantidade),
+        new ActionRowBuilder().addComponents(inputTipo)
+      );
       let selectedServicesGlobalBau = []; // Armazena globalmente as opções selecionadas
 
       if (customId === "reciboBau") {
@@ -534,104 +555,120 @@ module.exports = {
                 .setValue(item.value)
             )
           );
-      
+
         const buttonConfirma = new ButtonBuilder()
           .setCustomId("confirmar_bau")
           .setLabel("Confirmar")
           .setStyle(ButtonStyle.Success)
           .setEmoji("✅")
           .setDisabled(true); // Inicialmente desativado
-      
+
         const rowSelect = new ActionRowBuilder().addComponents(selectMenuBau);
         const rowButton = new ActionRowBuilder().addComponents(buttonConfirma);
-      
+
         await interaction.reply({
           content: "🔍 **Escolha os itens ilegais que deseja catalogar:**",
           components: [rowSelect, rowButton],
           flags: 64,
         });
-      
+
         const selectedItems = new Map();
-      
+
         const filter = (i) =>
           ["itens_ilegais_menu", "confirmar_bau"].includes(i.customId) &&
           i.user.id === interaction.user.id;
-      
+
         const collector = interaction.channel.createMessageComponentCollector({
           filter,
           time: 30_000,
         });
-      
+
         collector.on("collect", async (i) => {
           if (i.customId === "itens_ilegais_menu") {
             selectedItems.set(interaction.user.id, i.values);
-      
+
             const descriptionEmbedBau = i.values.length
               ? i.values
                   .map(
                     (value) =>
-                      itensIlegais.find((item) => item.value === value)?.label || "Serviço desconhecido"
+                      itensIlegais.find((item) => item.value === value)
+                        ?.label || "Serviço desconhecido"
                   )
                   .join("\n")
               : "Nenhum serviço selecionado.";
-      
+
             const updatedEmbed = new EmbedBuilder()
               .setTitle("📜 Itens Ilegais Selecionados")
               .setDescription(`🛠 **Itens Escolhidos:**\n${descriptionEmbedBau}`)
               .setColor("#0099ff");
-      
+
             const updatedButton = new ButtonBuilder()
               .setCustomId("confirmar_bau")
               .setLabel("Confirmar")
               .setStyle(ButtonStyle.Success)
               .setEmoji("✅")
               .setDisabled(i.values.length === 0);
-      
-            const rowButtonUpdated = new ActionRowBuilder().addComponents(updatedButton);
-      
+
+            const rowButtonUpdated = new ActionRowBuilder().addComponents(
+              updatedButton
+            );
+
             await i.update({
               embeds: [updatedEmbed],
               components: [rowSelect, rowButtonUpdated],
             });
           } else if (i.customId === "confirmar_bau") {
             const selectedServices = selectedItems.get(interaction.user.id);
-      
+
             if (!selectedServices || selectedServices.length === 0) {
               return i.reply({
-                content: "❌ **Nenhum item ilegal foi selecionado.** Selecione pelo menos um item antes de confirmar.",
+                content:
+                  "❌ **Nenhum item ilegal foi selecionado.** Selecione pelo menos um item antes de confirmar.",
                 flags: 64,
               });
             }
-      
+
             setTimeout(async () => {
               console.log("🔹 Exibindo modal...");
               await i.showModal(modalDrogas);
               console.log("✅ Modal exibido com sucesso!");
-      
-              const modalFilter = (modalI) => modalI.customId === "catalogar_itens";
-      
+
+              const modalFilter = (modalI) =>
+                modalI.customId === "catalogar_itens";
+
               i.awaitModalSubmit({ filter: modalFilter, time: 120_000 })
                 .then(async (modalInteraction) => {
                   console.log("✅ Modal submetido com sucesso!");
-      
-                  let qtd = modalInteraction.fields.getTextInputValue("quantidade_itens").replace(/,/g, "");
+
+                  let qtd = modalInteraction.fields
+                    .getTextInputValue("quantidade_itens")
+                    .replace(/,/g, "");
                   let quantidade = parseInt(qtd, 10);
-                  let tipo = modalInteraction.fields.getTextInputValue("tipo_item");
-      
+                  let tipo =
+                    modalInteraction.fields.getTextInputValue("tipo_item");
+
                   if (isNaN(quantidade)) {
                     return modalInteraction.reply({
-                      content: "❌ Quantidade inválida! Digite um número válido.",
+                      content:
+                        "❌ Quantidade inválida! Digite um número válido.",
                       flags: 64,
                     });
                   }
-      
-                  const item = itensIlegais.find((it) => it.value === selectedServices[0]);
-      
+
+                  const item = itensIlegais.find(
+                    (it) => it.value === selectedServices[0]
+                  );
+
                   const embedRecebido = new EmbedBuilder()
                     .setTitle("✅ Comprovante gerado com sucesso!")
                     .setDescription(
                       `📦 **Itens Catalogados:**\n${selectedServices
-                        .map((s) => `- ${itensIlegais.find((it) => it.value === s)?.label}`)
+                        .map(
+                          (s) =>
+                            `- ${
+                              itensIlegais.find((it) => it.value === s)?.label
+                            }`
+                        )
                         .join("\n")}`
                     )
                     .setColor("#00ff00")
@@ -640,7 +677,7 @@ module.exports = {
                       text: `Gerado por ${interaction.user.tag}`,
                       iconURL: interaction.user.displayAvatarURL(),
                     });
-      
+
                   try {
                     const novoItem = new ItemIlegal({
                       userId: interaction.user.id,
@@ -648,17 +685,18 @@ module.exports = {
                       quantidade: quantidade,
                       tipo: tipo,
                     });
-      
+
                     await novoItem.save();
                     console.log("✅ Item salvo no MongoDB!");
                   } catch (err) {
                     console.error("❌ Erro ao salvar no MongoDB:", err);
                     return modalInteraction.reply({
-                      content: "❌ Ocorreu um erro ao salvar os dados. Tente novamente.",
+                      content:
+                        "❌ Ocorreu um erro ao salvar os dados. Tente novamente.",
                       flags: 64,
                     });
                   }
-      
+
                   await webhookClientReciboIlegal.send({
                     content: `${interaction.user} catalogou um item ilegal! 🚨`,
                     embeds: [
@@ -666,7 +704,10 @@ module.exports = {
                         .setColor("Green")
                         .setTitle("📜 Item Ilegal Catalogado")
                         .addFields([
-                          { name: "📌 Item", value: item?.label || "Desconhecido" },
+                          {
+                            name: "📌 Item",
+                            value: item?.label || "Desconhecido",
+                          },
                           { name: "📊 Quantidade", value: qtd },
                           { name: "📦 Tipo", value: tipo },
                         ])
@@ -677,7 +718,7 @@ module.exports = {
                         .setTimestamp(),
                     ],
                   });
-      
+
                   await modalInteraction.reply({
                     content: "✅ **Item catalogado com sucesso!**",
                     flags: 64,
@@ -686,14 +727,14 @@ module.exports = {
                 .catch(() => {
                   i.deferReply({ ephemeral: true });
                   i.editReply({
-                    content: "⏳ **Tempo esgotado!** O modal foi fechado sem resposta.",
+                    content:
+                      "⏳ **Tempo esgotado!** O modal foi fechado sem resposta.",
                   });
                 });
             }, 1000);
           }
         });
       }
-      
     }
 
     // Processa modais
