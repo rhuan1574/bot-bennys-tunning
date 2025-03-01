@@ -636,7 +636,7 @@ module.exports = {
               interaction.customId === "catalogar_itens" &&
               interaction.user.id === i.user.id;
 
-            i.awaitModalSubmit({ filter: modalFilter, time: 60_000 })
+            i.awaitModalSubmit({ filter: modalFilter, time: 120_000 })
               .then(async (modalInteraction) => {
                 const qtd =
                   modalInteraction.fields.getTextInputValue("quantidade_itens");
