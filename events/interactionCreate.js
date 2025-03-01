@@ -499,6 +499,12 @@ module.exports = {
                   message.delete().catch(console.error); // Apaga a mensagem com a imagem
                 }, 10000);
                 collector.stop();
+              } else {
+                await interaction.followUp({
+                  content:
+                    "❌ Nenhuma imagem foi enviada. Envie uma imagem de comprovante neste canal.",
+                  flags: 64,
+                });
               }
             });
 
