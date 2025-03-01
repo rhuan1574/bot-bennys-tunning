@@ -518,6 +518,28 @@ module.exports = {
           }
         });
       }
+      // Variável modalDrogas deve ser declarada antes para evitar erro
+      const modalDrogas = new ModalBuilder()
+        .setCustomId("catalogar_itens")
+        .setTitle("📦 Catalogar Itens Ilegais");
+
+      const inputQuantidade = new TextInputBuilder()
+        .setCustomId("quantidade_itens")
+        .setLabel("📊 Quantidade de Itens:")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
+
+      const inputTipo = new TextInputBuilder()
+        .setCustomId("tipo_item")
+        .setLabel("📌 Tipo de Item:")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
+
+      modalDrogas.addComponents(
+        new ActionRowBuilder().addComponents(inputQuantidade),
+        new ActionRowBuilder().addComponents(inputTipo)
+      );
+
       let selectedServicesGlobalBau = []; // Armazena globalmente as opções selecionadas
 
       if (customId === "reciboBau") {
@@ -607,52 +629,24 @@ module.exports = {
               });
             }
 
-            setTimeout(async () => {
-              console.log("🔹 Exibindo modal...");
-              await i.showModal(modalDrogas);
-              console.log("✅ Modal exibido com sucesso!");
+            console.log("🔹 Exibindo modal...");
+            await i.showModal(modalDrogas);
+            console.log("✅ Modal exibido com sucesso!");
 
-              const modalFilter = (modalI) =>
-                modalI.customId === "catalogar_itens";
-
-              i.awaitModalSubmit({ filter: modalFilter, time: 120_000 })
-                .then(async (modalInteraction) => {
-                  console.log("✅ Modal submetido com sucesso!");
-
-                  const qtd =
-                    modalInteraction.fields.getTextInputValue(
-                      "quantidade_itens"
-                    );
-                  const tipo =
-                    modalInteraction.fields.getTextInputValue("tipo_item");
-
-                  console.log(`📦 Quantidade: ${qtd}, Tipo: ${tipo}`);
-
-                  await modalInteraction.reply({
-                    content: "✅ **Item catalogado com sucesso!**",
-                    flags: 64,
-                  });
-                })
-                .catch((error) => {
-                  console.error("❌ Erro ao processar o modal:", error);
-                  i.followUp({
-                    content:
-                      "⏳ **Tempo esgotado ou erro interno!** O modal foi fechado sem resposta.",
-                    flags: 64,
-                  });
-                });
-            }, 1000);
-
-            const modalFilter = (interaction) =>
-              interaction.customId === "catalogar_itens" &&
-              interaction.user.id === i.user.id;
+            const modalFilter = (modalI) =>
+              modalI.customId === "catalogar_itens" &&
+              modalI.user.id === i.user.id;
 
             i.awaitModalSubmit({ filter: modalFilter, time: 120_000 })
               .then(async (modalInteraction) => {
+                console.log("✅ Modal submetido com sucesso!");
+
                 const qtd =
                   modalInteraction.fields.getTextInputValue("quantidade_itens");
                 const tipo =
                   modalInteraction.fields.getTextInputValue("tipo_item");
+
+                console.log(`📦 Quantidade: ${qtd}, Tipo: ${tipo}`);
 
                 const item = itensIlegais.find(
                   (it) => it.value === selectedServices[0]
@@ -695,6 +689,7 @@ module.exports = {
                   .catch((err) =>
                     console.error("❌ Erro ao salvar no MongoDB:", err)
                   );
+
                 await webhookClientReciboIlegal.send({
                   content: `${interaction.user} catalogou um item ilegal! 🚨`,
                   embeds: [
