@@ -4,6 +4,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Events, GatewayIntentBits, Collection } = require('discord.js');
 const { token } = require("./config.json");
+const connectToDatabase = require("./database/connect");
+
+connectToDatabase(); // Conectar ao banco ao iniciar o bot
+
 
 const client = new Client({
     intents: [

@@ -1,7 +1,9 @@
 {
   "dependencies": {
     "discord.js": "^14.17.2",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "mongodb": "^6.14.0",
+    "mongoose": "^8.11.0"
   },
   "name": "bot-farm",
   "version": "1.0.0",

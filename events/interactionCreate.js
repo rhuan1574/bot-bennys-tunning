@@ -15,7 +15,7 @@ const {
 } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
-
+const ItemIlegal = require("../database/itemlegal"); // Importa o modelo
 const {
   webhookReciboId,
   webhookReciboToken,
@@ -216,7 +216,6 @@ const tipoItens = [
   { label: "Flipper MK5", value: "flipper-mk5" },
   { label: "Chave de Ouro", value: "chave-de-ouro" },
   { label: "Chave de Platina", value: "chave-de-platina" },
-
 ];
 let description;
 // Caminho para o arquivo JSON que armazenará os canais criados
@@ -520,11 +519,12 @@ module.exports = {
         });
       }
       let selectedServicesGlobalBau = []; // Armazena globalmente as opções selecionadas
+
       if (customId === "reciboBau") {
         const selectMenuBau = new StringSelectMenuBuilder()
           .setCustomId("itens_ilegais_menu")
           .setMinValues(1)
-          .setMaxValues(6) // Permitir até 6 seleções
+          .setMaxValues(6)
           .setPlaceholder("Selecione até 6 serviços...")
           .addOptions(
             itensIlegais.map((item) =>
@@ -539,86 +539,185 @@ module.exports = {
           .setCustomId("confirmar_bau")
           .setLabel("Confirmar")
           .setStyle(ButtonStyle.Success)
-          .setEmoji("✅");
+          .setEmoji("✅")
+          .setDisabled(true); // Inicialmente desativado
 
         const rowSelect = new ActionRowBuilder().addComponents(selectMenuBau);
         const rowButton = new ActionRowBuilder().addComponents(buttonConfirma);
 
         await interaction.reply({
-          content: "Selecione os itens ilegais que deseja catalogar:",
+          content: "🔍 **Escolha os itens ilegais que deseja catalogar:**",
           components: [rowSelect, rowButton],
-          ephemeral: true, // Deixa a resposta privada para o usuário
+          ephemeral: true,
         });
+
+        const selectedItems = new Map();
 
         const filter = (i) =>
           ["itens_ilegais_menu", "confirmar_bau"].includes(i.customId) &&
           i.user.id === interaction.user.id;
 
-        const componentCollector =
-          interaction.channel.createMessageComponentCollector({
-            filter,
-            time: 30_000,
-          });
+        const collector = interaction.channel.createMessageComponentCollector({
+          filter,
+          time: 30_000,
+        });
 
-        componentCollector.on("collect", async (i) => {
+        collector.on("collect", async (i) => {
           if (i.customId === "itens_ilegais_menu") {
-            interaction.client.selectedItems =
-              interaction.client.selectedItems || {};
-            interaction.client.selectedItems[interaction.user.id] = i.values;
+            selectedItems.set(interaction.user.id, i.values);
 
-            const descriptionEmbedBau =
-              i.values
-                .map(
-                  (value) =>
-                    itensIlegais.find((item) => item.value === value)?.label ||
-                    "Serviço desconhecido"
-                )
-                .join("\n") || "Nenhum serviço selecionado.";
+            const descriptionEmbedBau = i.values.length
+              ? i.values
+                  .map(
+                    (value) =>
+                      itensIlegais.find((item) => item.value === value)
+                        ?.label || "Serviço desconhecido"
+                  )
+                  .join("\n")
+              : "Nenhum serviço selecionado.";
 
             const updatedEmbed = new EmbedBuilder()
-              .setTitle("Itens Ilegais Selecionados")
-              .setDescription(descriptionEmbedBau)
+              .setTitle("📜 Itens Ilegais Selecionados")
+              .setDescription(`🛠 **Itens Escolhidos:**\n${descriptionEmbedBau}`)
               .setColor("#0099ff");
+
+            const updatedButton = new ButtonBuilder()
+              .setCustomId("confirmar_bau")
+              .setLabel("Confirmar")
+              .setStyle(ButtonStyle.Success)
+              .setEmoji("✅")
+              .setDisabled(i.values.length === 0); // Habilita se houver seleção
+
+            const rowButtonUpdated = new ActionRowBuilder().addComponents(
+              updatedButton
+            );
 
             await i.update({
               embeds: [updatedEmbed],
-              components: [rowSelect, rowButton],
+              components: [rowSelect, rowButtonUpdated],
             });
           } else if (i.customId === "confirmar_bau") {
-            const selectedServices =
-              interaction.client.selectedItems[interaction.user.id];
+            const selectedServices = selectedItems.get(interaction.user.id);
 
             if (!selectedServices || selectedServices.length === 0) {
               return i.reply({
                 content:
-                  "❌ Nenhum item ilegal foi selecionado. Selecione pelo menos um item antes de confirmar.",
+                  "❌ **Nenhum item ilegal foi selecionado.** Selecione pelo menos um item antes de confirmar.",
                 ephemeral: true,
               });
             }
 
-            const modalDrogas = new ModalBuilder()
-              .setCustomId("modal-drogas")
-              .setTitle("Catalogar Itens Ilegais");
+            setTimeout(async () => {
+              const modalDrogas = new ModalBuilder()
+                .setCustomId("catalogar_itens")
+                .setTitle("📦 Catalogar Itens Ilegais");
 
-            const input = new TextInputBuilder()
-              .setCustomId("item_ilegal")
-              .setLabel("Insira a quantidade de itens:")
-              .setStyle(TextInputStyle.Short)
-              .setRequired(true);
+              const inputQuantidade = new TextInputBuilder()
+                .setCustomId("quantidade_itens")
+                .setLabel("📊 Quantidade de Itens:")
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
 
-            const inputTipo = new TextInputBuilder()
-              .setCustomId("item_ilegal")
-              .setLabel("Insira o tipo de item a catalogar:")
-              .setStyle(TextInputStyle.Short)
-              .setRequired(true);
+              const inputTipo = new TextInputBuilder()
+                .setCustomId("tipo_item")
+                .setLabel("📌 Tipo de Item:")
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
 
-            const actionRow = new ActionRowBuilder().addComponents(
-              input,
-              inputTipo
-            );
-            modalDrogas.addComponents(actionRow);
+              modalDrogas.addComponents(
+                new ActionRowBuilder().addComponents(inputQuantidade),
+                new ActionRowBuilder().addComponents(inputTipo)
+              );
 
-            await i.showModal(modalDrogas);
+              await i.showModal(modalDrogas);
+            }, 1000);
+
+            const modalFilter = (interaction) =>
+              interaction.customId === "catalogar_itens" &&
+              interaction.user.id === i.user.id;
+
+            i.awaitModalSubmit({ filter: modalFilter, time: 60_000 })
+              .then(async (modalInteraction) => {
+                const qtd =
+                  modalInteraction.fields.getTextInputValue("quantidade_itens");
+                const tipo =
+                  modalInteraction.fields.getTextInputValue("tipo_item");
+
+                const item = itensIlegais.find(
+                  (it) => it.value === selectedServices[0]
+                );
+
+                const attachment = modalInteraction.attachments?.first(); // Verifica se há imagem anexada
+
+                const embedRecebido = new EmbedBuilder()
+                  .setTitle("✅ Comprovante gerado com sucesso!")
+                  .setDescription(
+                    `📦 **Itens Catalogados:**\n${selectedServices
+                      .map(
+                        (s) =>
+                          `- ${
+                            itensIlegais.find((it) => it.value === s)?.label
+                          }`
+                      )
+                      .join("\n")}`
+                  )
+                  .setColor("#00ff00")
+                  .setTimestamp()
+                  .setFooter({
+                    text: `Gerado por ${interaction.user.tag}`,
+                    iconURL: interaction.user.displayAvatarURL(),
+                  });
+
+                if (attachment) embedRecebido.setImage(attachment.url);
+
+                // Criar novo documento no banco
+                const novoItem = new ItemIlegal({
+                  userId: interaction.user.id,
+                  item: item?.label || "Desconhecido",
+                  quantidade: parseInt(qtd, 10),
+                  tipo: tipo,
+                });
+
+                await novoItem
+                  .save()
+                  .then(() => console.log("✅ Item salvo no MongoDB!"))
+                  .catch((err) =>
+                    console.error("❌ Erro ao salvar no MongoDB:", err)
+                  );
+                await webhookClientReciboIlegal.send({
+                  content: `${interaction.user} catalogou um item ilegal! 🚨`,
+                  embeds: [
+                    new EmbedBuilder()
+                      .setColor("Green")
+                      .setTitle("📜 Item Ilegal Catalogado")
+                      .addFields([
+                        {
+                          name: "📌 Item",
+                          value: item?.label || "Desconhecido",
+                        },
+                        { name: "📊 Quantidade", value: qtd },
+                        { name: "📦 Tipo", value: tipo },
+                      ])
+                      .setFooter({
+                        text: `Catalogado por ${interaction.user.tag}`,
+                        iconURL: interaction.user.displayAvatarURL(),
+                      })
+                      .setTimestamp(),
+                  ],
+                });
+
+                await modalInteraction.reply({
+                  content: "✅ **Item catalogado com sucesso!**",
+                  ephemeral: true,
+                });
+              })
+              .catch(() => {
+                i.followUp({
+                  content:
+                    "⏳ **Tempo esgotado!** O modal foi fechado sem resposta.",
+                  ephemeral: true,
+                });
+              });
           }
         });
       }
