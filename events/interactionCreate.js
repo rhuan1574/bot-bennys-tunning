@@ -453,7 +453,7 @@ module.exports = {
                 new EmbedBuilder()
                   .setTitle("Recibo Confirmado!")
                   .setDescription(
-                    `Serviços confirmados:\n${descriptionEmbed}\n\nAgora, envie uma imagem de comprovante neste canal.`
+                    `Serviços confirmados:\n${descriptionEmbed}\n\nAgora, envie uma imagem de comprovante neste canal. Você tem 2 minutos.`
                   )
                   .setColor("#00ff00"),
               ],
