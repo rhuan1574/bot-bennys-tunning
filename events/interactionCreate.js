@@ -461,50 +461,125 @@ module.exports = {
       // Handler para o botão de recibo
       if (customId === "recibo") {
         try {
-          const TIMEOUT_MENU = 30_000; // 30 segundos
-          const TIMEOUT_IMAGE = 120_000; // 2 minutos
-          const DELETE_DELAY = 10_000; // 10 segundos
+          const TIMEOUT_MENU = 30_000;
+          const TIMEOUT_IMAGE = 120_000;
+          const DELETE_DELAY = 10_000;
 
           // Criação dos componentes UI
           const selectMenu = createServiceSelectMenu(tunagem);
           const buttonConfirma = createConfirmButton();
-          const rows = createActionRows(selectMenu, buttonConfirma);
           
-          // Estado inicial
-          const initialEmbed = createEmbed({
-            title: "Serviços Selecionados",
-            description: "Nenhum serviço selecionado ainda.",
-            color: "#0099ff"
-          });
+          // Função que faltava para criar as action rows
+          const rows = [
+            new ActionRowBuilder().addComponents(selectMenu),
+            new ActionRowBuilder().addComponents(buttonConfirma)
+          ];
+
+          const initialEmbed = new EmbedBuilder()
+            .setTitle("Serviços Selecionados")
+            .setDescription("Nenhum serviço selecionado ainda.")
+            .setColor("#0099ff");
 
           // Envia mensagem inicial
-          const reply = await interaction.reply({
+          await interaction.reply({
             embeds: [initialEmbed],
             components: rows,
-            flags: 64,
-            fetchReply: true
+            flags: 64
           });
 
-          // Configura coletores
-          const componentCollector = createComponentCollector(interaction, TIMEOUT_MENU);
-          let selectedServices = [];
+          // Filtro para o coletor
+          const filter = (i) => 
+            (i.customId === "tunagem_menu" || i.customId === "confirmar") &&
+            i.user.id === interaction.user.id;
 
-          // Handler de componentes
-          componentCollector.on("collect", async (i) => {
+          // Configura coletor
+          const collector = interaction.channel.createMessageComponentCollector({
+            filter,
+            time: TIMEOUT_MENU
+          });
+
+          let selectedServices = [];
+          let servicesDescription = "";
+
+          collector.on("collect", async (i) => {
             if (i.customId === "tunagem_menu") {
               selectedServices = i.values;
-              await handleServiceSelection(i, selectedServices, tunagem, rows);
+              servicesDescription = selectedServices
+                .map(value => tunagem.find(item => item.value === value)?.label || "Serviço desconhecido")
+                .join("\n");
+
+              const updatedEmbed = new EmbedBuilder()
+                .setTitle("Serviços Selecionados")
+                .setDescription(servicesDescription)
+                .setColor("#0099ff");
+
+              await i.update({
+                embeds: [updatedEmbed],
+                components: rows
+              });
             }
 
             if (i.customId === "confirmar") {
-              await handleConfirmation(i, selectedServices);
-              const imageCollector = createImageCollector(interaction, TIMEOUT_IMAGE);
-              
-              imageCollector.on("collect", async (message) => {
-                await handleImageSubmission(message, interaction, selectedServices, DELETE_DELAY);
+              const confirmEmbed = new EmbedBuilder()
+                .setTitle("Recibo Confirmado!")
+                .setDescription(`Serviços confirmados:\n${servicesDescription}\n\nAgora, envie uma imagem de comprovante neste canal. Você tem 2 minutos.`)
+                .setColor("#00ff00");
+
+              await i.update({
+                embeds: [confirmEmbed],
+                components: []
               });
 
-              imageCollector.on("end", handleCollectorTimeout(interaction));
+              const imageFilter = (m) => 
+                m.author.id === interaction.user.id && 
+                m.attachments.size > 0;
+
+              const imageCollector = interaction.channel.createMessageCollector({
+                filter: imageFilter,
+                time: TIMEOUT_IMAGE
+              });
+
+              imageCollector.on("collect", async (message) => {
+                const attachment = message.attachments.first();
+                if (attachment) {
+                  const receiptEmbed = new EmbedBuilder()
+                    .setTitle("Comprovante gerado com sucesso!")
+                    .setDescription(`Serviços realizados:\n${servicesDescription}`)
+                    .setImage(attachment.url)
+                    .setFooter({
+                      text: `Gerado por ${interaction.user.tag}`,
+                      iconURL: interaction.user.displayAvatarURL()
+                    })
+                    .setColor("#00ff00")
+                    .setTimestamp();
+
+                  await interaction.followUp({
+                    content: "Imagem recebida com sucesso!",
+                    embeds: [receiptEmbed],
+                    flags: 64
+                  });
+
+                  await Promise.all([
+                    webhookClientRecibo.send({ embeds: [receiptEmbed] }),
+                    webhookClientLog.send({ embeds: [receiptEmbed] })
+                  ]);
+
+                  setTimeout(() => {
+                    message.delete().catch(console.error);
+                  }, DELETE_DELAY);
+
+                  imageCollector.stop();
+                }
+              });
+
+              imageCollector.on("end", (collected) => {
+                if (collected.size === 0) {
+                  interaction.followUp({
+                    content: "Tempo esgotado! Nenhuma imagem foi enviada.",
+                    flags: 64
+                  });
+                }
+              });
             }
           });
 
