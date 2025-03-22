@@ -681,28 +681,63 @@ module.exports = {
         try {
           await interaction.deferReply({ ephemeral: true });
           
-          const { rows, updateButton } = createUIComponents();
+          const { rows, selectMenu, confirmButton } = createUIComponents();
           let selectedItems = [];
 
-          // Mensagem inicial
+          // Mensagem inicial mais clara
           await interaction.editReply({
-            content: "🔍 **Selecione os itens ilegais para catalogar:**",
+            content: "🔍 **Selecione os itens ilegais para catalogar:**\n*(Você precisa selecionar pelo menos 1 item)*",
             components: rows
           });
 
-          // Coletor de interações
+          // Melhorar o coletor com timeout mais claro
           const collector = interaction.channel.createMessageComponentCollector({
-            filter: (i) => 
-              ["itens_ilegais_menu", "confirmar_bau"].includes(i.customId) &&
-              i.user.id === interaction.user.id,
+            filter: (i) => {
+              if (i.user.id !== interaction.user.id) {
+                i.reply({ 
+                  content: "❌ Apenas quem iniciou a interação pode usar estes controles.", 
+                  ephemeral: true 
+                });
+                return false;
+              }
+              return ["itens_ilegais_menu", "confirmar_bau"].includes(i.customId);
+            },
             time: TIMEOUT_INTERACTION
           });
 
           collector.on("collect", async (i) => {
             try {
               if (i.customId === "itens_ilegais_menu") {
-                await handleMenuSelection(i, selectedItems);
+                selectedItems = i.values;
+                
+                // Validação mais clara da seleção
+                if (!selectedItems || selectedItems.length === 0) {
+                  await i.update({
+                    content: "⚠️ **Você precisa selecionar pelo menos um item!**",
+                    components: rows
+                  });
+                  return;
+                }
+
+                const descriptionEmbed = createItemsEmbed(selectedItems);
+                const updatedComponents = updateUIComponents(rows, selectedItems);
+
+                await i.update({
+                  content: "✅ **Itens selecionados! Clique em Confirmar para prosseguir.**",
+                  embeds: [descriptionEmbed],
+                  components: updatedComponents
+                });
+
               } else if (i.customId === "confirmar_bau") {
+                // Validação extra antes de mostrar o modal
+                if (!selectedItems || selectedItems.length === 0) {
+                  await i.reply({
+                    content: "❌ **Você precisa selecionar pelo menos um item antes de confirmar!**",
+                    ephemeral: true
+                  });
+                  return;
+                }
+
                 await handleConfirmation(i, selectedItems, interaction);
                 collector.stop("success");
               }
@@ -712,11 +747,13 @@ module.exports = {
             }
           });
 
+          // Melhor feedback no timeout
           collector.on("end", async (collected, reason) => {
             if (reason !== "success") {
               await interaction.editReply({
-                content: "⏳ **Tempo esgotado!** Interação encerrada.",
-                components: []
+                content: "⏳ **Tempo esgotado!** A seleção foi cancelada. Use o comando novamente se necessário.",
+                components: [],
+                embeds: []
               });
             }
           });
@@ -1075,23 +1112,49 @@ async function saveItemsToDatabase(selectedItems, quantidade, tipo, interaction)
 }
 
 function createItemsEmbed(selectedItems) {
+  const itemsList = selectedItems
+    .map(value => {
+      const item = itensIlegais.find(i => i.value === value);
+      return item ? `• ${item.label}` : null;
+    })
+    .filter(Boolean)
+    .join("\n");
+
   return new EmbedBuilder()
     .setTitle("📜 Itens Ilegais Selecionados")
-    .setDescription(
-      selectedItems.map(value => {
-        const item = itensIlegais.find(i => i.value === value);
-        return item?.label || "Item Desconhecido";
-      }).join("\n")
-    )
-    .setColor("#0099ff")
-    .setTimestamp();
+    .setDescription(itemsList || "Nenhum item selecionado.")
+    .setColor(itemsList ? "#0099ff" : "#ff0000")
+    .setTimestamp()
+    .setFooter({ text: "Selecione os itens desejados e clique em Confirmar" });
 }
 
 async function handleError(interaction) {
-  const errorMessage = "❌ **Ocorreu um erro ao processar sua solicitação.**";
-  if (!interaction.replied && !interaction.deferred) {
-    await interaction.reply({ content: errorMessage, ephemeral: true });
-  } else {
-    await interaction.followUp({ content: errorMessage, ephemeral: true });
+  const errorMessage = {
+    content: "❌ **Ocorreu um erro ao processar sua solicitação.**\nTente novamente ou contate um administrador se o erro persistir.",
+    ephemeral: true
+  };
+
+  try {
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply(errorMessage);
+    } else {
+      await interaction.followUp(errorMessage);
+    }
+  } catch (e) {
+    console.error("Erro ao enviar mensagem de erro:", e);
   }
+}
+
+function updateUIComponents(rows, selectedItems) {
+  const confirmButton = new ButtonBuilder()
+    .setCustomId("confirmar_bau")
+    .setLabel("Confirmar")
+    .setStyle(ButtonStyle.Success)
+    .setEmoji("✅")
+    .setDisabled(!selectedItems.length);
+
+  return [
+    rows[0], // Mantém o menu de seleção
+    new ActionRowBuilder().addComponents(confirmButton)
+  ];
 }
