@@ -328,6 +328,71 @@ const handleImageSubmission = async (message, interaction, selectedServices, del
   setTimeout(() => message.delete().catch(console.error), deleteDelay);
 };
 
+// Constantes
+const TIMEOUT_INTERACTION = 60_000;
+const TIMEOUT_MODAL = 120_000;
+
+// Configurações do Modal
+const createItemModal = () => {
+  const modal = new ModalBuilder()
+    .setCustomId("catalogar_itens")
+    .setTitle("📦 Catalogar Itens Ilegais");
+
+  const inputs = {
+    quantidade: new TextInputBuilder()
+      .setCustomId("quantidade_itens")
+      .setLabel("📊 Quantidade de Itens:")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setPlaceholder("Digite apenas números"),
+
+    tipo: new TextInputBuilder()
+      .setCustomId("tipo_item")
+      .setLabel("📌 Tipo de Item:")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setPlaceholder("Ex: Drogas, Armas, etc")
+  };
+
+  return modal.addComponents(
+    new ActionRowBuilder().addComponents(inputs.quantidade),
+    new ActionRowBuilder().addComponents(inputs.tipo)
+  );
+};
+
+// Componentes UI
+const createUIComponents = () => {
+  const selectMenu = new StringSelectMenuBuilder()
+    .setCustomId("itens_ilegais_menu")
+    .setMinValues(1)
+    .setMaxValues(6)
+    .setPlaceholder("Selecione até 6 itens...")
+    .addOptions(
+      itensIlegais.map(item => 
+        new StringSelectMenuOptionBuilder()
+          .setLabel(item.label)
+          .setDescription(item.description)
+          .setValue(item.value)
+      )
+    );
+
+  const confirmButton = new ButtonBuilder()
+    .setCustomId("confirmar_bau")
+    .setLabel("Confirmar")
+    .setStyle(ButtonStyle.Success)
+    .setEmoji("✅")
+    .setDisabled(true);
+
+  return {
+    rows: [
+      new ActionRowBuilder().addComponents(selectMenu),
+      new ActionRowBuilder().addComponents(confirmButton)
+    ],
+    updateButton: (disabled = false) => 
+      confirmButton.setDisabled(disabled)
+  };
+};
+
 module.exports = {
   name: Events.InteractionCreate,
   async execute(interaction) {
@@ -613,184 +678,53 @@ module.exports = {
       );
 
       if (customId === "reciboBau") {
-        await interaction.deferReply({ ephemeral: true });
+        try {
+          await interaction.deferReply({ ephemeral: true });
+          
+          const { rows, updateButton } = createUIComponents();
+          let selectedItems = [];
 
-        // Cria o menu de seleção de itens
-        const selectMenuBau = new StringSelectMenuBuilder()
-          .setCustomId("itens_ilegais_menu")
-          .setMinValues(1)
-          .setMaxValues(6)
-          .setPlaceholder("Selecione até 6 itens...")
-          .addOptions(
-            itensIlegais.map((item) =>
-              new StringSelectMenuOptionBuilder()
-                .setLabel(item.label)
-                .setDescription(item.description)
-                .setValue(item.value)
-            )
-          );
+          // Mensagem inicial
+          await interaction.editReply({
+            content: "🔍 **Selecione os itens ilegais para catalogar:**",
+            components: rows
+          });
 
-        // Cria o botão de confirmação
-        const buttonConfirma = new ButtonBuilder()
-          .setCustomId("confirmar_bau")
-          .setLabel("Confirmar")
-          .setStyle(ButtonStyle.Success)
-          .setEmoji("✅")
-          .setDisabled(true);
+          // Coletor de interações
+          const collector = interaction.channel.createMessageComponentCollector({
+            filter: (i) => 
+              ["itens_ilegais_menu", "confirmar_bau"].includes(i.customId) &&
+              i.user.id === interaction.user.id,
+            time: TIMEOUT_INTERACTION
+          });
 
-        const rowSelect = new ActionRowBuilder().addComponents(selectMenuBau);
-        const rowButton = new ActionRowBuilder().addComponents(buttonConfirma);
-
-        await interaction.editReply({
-          content: "🔍 **Selecione os itens ilegais para catalogar:**",
-          components: [rowSelect, rowButton],
-        });
-
-        // Configuração do coletor de interações
-        const collector = interaction.channel.createMessageComponentCollector({
-          filter: (i) => 
-            ["itens_ilegais_menu", "confirmar_bau"].includes(i.customId) &&
-            i.user.id === interaction.user.id,
-          time: 60_000, // Aumentado para 1 minuto
-        });
-
-        let selectedServicesGlobalBau = [];
-
-        collector.on("collect", async (i) => {
-          try {
-            if (i.customId === "itens_ilegais_menu") {
-              selectedServicesGlobalBau = i.values;
-
-              const descriptionEmbedBau = i.values.length
-                ? i.values
-                    .map((value) => {
-                      const item = itensIlegais.find((item) => item.value === value);
-                      return item?.label || "Item Desconhecido";
-                    })
-                    .join("\n")
-                : "Nenhum item selecionado.";
-
-              const updatedEmbed = new EmbedBuilder()
-                .setTitle("📜 Itens Ilegais Selecionados")
-                .setDescription(`🛠 **Itens:**\n${descriptionEmbedBau}`)
-                .setColor("#0099ff")
-                .setTimestamp();
-
-              const updatedButton = new ButtonBuilder()
-                .setCustomId("confirmar_bau")
-                .setLabel("Confirmar")
-                .setStyle(ButtonStyle.Success)
-                .setEmoji("✅")
-                .setDisabled(!i.values.length);
-
-              await i.update({
-                embeds: [updatedEmbed],
-                components: [
-                  rowSelect,
-                  new ActionRowBuilder().addComponents(updatedButton)
-                ],
-              });
-
-            } else if (i.customId === "confirmar_bau") {
-              if (!selectedServicesGlobalBau.length) {
-                return await i.reply({
-                  content: "❌ **Selecione pelo menos um item ilegal.**",
-                  ephemeral: true,
-                });
-              }
-
-              await i.showModal(modalDrogas);
-
-              const modalInteraction = await i.awaitModalSubmit({
-                filter: (modalI) => modalI.customId === "catalogar_itens",
-                time: 120_000,
-              });
-
-              const quantidade = parseInt(
-                modalInteraction.fields
-                  .getTextInputValue("quantidade_itens")
-                  .replace(/,/g, ""),
-                10
-              );
-
-              const tipo = modalInteraction.fields.getTextInputValue("tipo_item");
-
-              if (isNaN(quantidade) || quantidade <= 0) {
-                return await modalInteraction.reply({
-                  content: "❌ **Digite uma quantidade válida maior que zero.**",
-                  ephemeral: true,
-                });
-              }
-
-              const selectedItems = selectedServicesGlobalBau.map(value => 
-                itensIlegais.find(item => item.value === value)
-              ).filter(Boolean);
-
-              // Salva cada item selecionado
-              try {
-                await Promise.all(selectedItems.map(item =>
-                  new ItemIlegal({
-                    userId: interaction.user.id,
-                    item: item.label,
-                    quantidade,
-                    tipo,
-                  }).save()
-                ));
-
-                const catalogEmbed = new EmbedBuilder()
-                  .setColor("Green")
-                  .setTitle("📜 Itens Ilegais Catalogados")
-                  .addFields([
-                    { 
-                      name: "📌 Itens", 
-                      value: selectedItems.map(item => item.label).join("\n") 
-                    },
-                    { name: "📊 Quantidade", value: quantidade.toString() },
-                    { name: "📦 Tipo", value: tipo },
-                  ])
-                  .setFooter({
-                    text: `Catalogado por ${interaction.user.tag}`,
-                    iconURL: interaction.user.displayAvatarURL(),
-                  })
-                  .setTimestamp();
-
-                await webhookClientReciboIlegal.send({
-                  content: `${interaction.user} catalogou itens ilegais! 🚨`,
-                  embeds: [catalogEmbed],
-                });
-
-                await modalInteraction.reply({
-                  content: "✅ **Itens catalogados com sucesso!**",
-                  ephemeral: true,
-                });
-
+          collector.on("collect", async (i) => {
+            try {
+              if (i.customId === "itens_ilegais_menu") {
+                await handleMenuSelection(i, selectedItems);
+              } else if (i.customId === "confirmar_bau") {
+                await handleConfirmation(i, selectedItems, interaction);
                 collector.stop("success");
-
-              } catch (err) {
-                console.error("❌ Erro ao salvar no MongoDB:", err);
-                await modalInteraction.reply({
-                  content: "❌ **Ocorreu um erro ao salvar os dados.**",
-                  ephemeral: true,
-                });
               }
+            } catch (error) {
+              console.error("❌ Erro na interação:", error);
+              await handleError(i);
             }
-          } catch (error) {
-            console.error("❌ Erro na interação:", error);
-            await i.reply({
-              content: "❌ **Ocorreu um erro ao processar sua solicitação.**",
-              ephemeral: true,
-            });
-          }
-        });
+          });
 
-        collector.on("end", async (collected, reason) => {
-          if (reason !== "success") {
-            await interaction.editReply({
-              content: "⏳ **Tempo esgotado!** Interação encerrada.",
-              components: [],
-            });
-          }
-        });
+          collector.on("end", async (collected, reason) => {
+            if (reason !== "success") {
+              await interaction.editReply({
+                content: "⏳ **Tempo esgotado!** Interação encerrada.",
+                components: []
+              });
+            }
+          });
+
+        } catch (error) {
+          console.error("❌ Erro principal:", error);
+          await handleError(interaction);
+        }
       }
     }
 
@@ -1052,3 +986,112 @@ module.exports = {
     }
   },
 };
+
+// Funções auxiliares
+async function handleMenuSelection(interaction, selectedItems) {
+  selectedItems = interaction.values;
+  
+  const descriptionEmbed = createItemsEmbed(selectedItems);
+  const updatedButton = new ButtonBuilder()
+    .setCustomId("confirmar_bau")
+    .setLabel("Confirmar")
+    .setStyle(ButtonStyle.Success)
+    .setEmoji("✅")
+    .setDisabled(!selectedItems.length);
+
+  const components = [
+    new ActionRowBuilder().addComponents(interaction.message.components[0].components[0]),
+    new ActionRowBuilder().addComponents(updatedButton)
+  ];
+
+  await interaction.update({
+    embeds: [descriptionEmbed],
+    components
+  });
+}
+
+async function handleConfirmation(interaction, selectedItems, originalInteraction) {
+  if (!selectedItems.length) {
+    return await interaction.reply({
+      content: "❌ **Selecione pelo menos um item ilegal.**",
+      ephemeral: true
+    });
+  }
+
+  const modal = createItemModal();
+  await interaction.showModal(modal);
+
+  try {
+    const modalResponse = await interaction.awaitModalSubmit({
+      filter: (i) => i.customId === "catalogar_itens",
+      time: TIMEOUT_MODAL
+    });
+
+    const { quantidade, tipo } = validateModalInputs(modalResponse);
+    if (!quantidade) {
+      return await modalResponse.reply({
+        content: "❌ **Digite uma quantidade válida maior que zero.**",
+        ephemeral: true
+      });
+    }
+
+    await saveItemsToDatabase(selectedItems, quantidade, tipo, originalInteraction);
+    await sendWebhookNotification(selectedItems, quantidade, tipo, originalInteraction);
+
+    await modalResponse.reply({
+      content: "✅ **Itens catalogados com sucesso!**",
+      ephemeral: true
+    });
+
+  } catch (error) {
+    console.error("❌ Erro no processamento do modal:", error);
+    await handleError(interaction);
+  }
+}
+
+function validateModalInputs(modalResponse) {
+  const quantidade = parseInt(
+    modalResponse.fields.getTextInputValue("quantidade_itens").replace(/,/g, ""),
+    10
+  );
+  const tipo = modalResponse.fields.getTextInputValue("tipo_item");
+
+  return { quantidade, tipo };
+}
+
+async function saveItemsToDatabase(selectedItems, quantidade, tipo, interaction) {
+  const items = selectedItems.map(value => 
+    itensIlegais.find(item => item.value === value)
+  ).filter(Boolean);
+
+  await Promise.all(items.map(item =>
+    new ItemIlegal({
+      userId: interaction.user.id,
+      item: item.label,
+      quantidade,
+      tipo,
+    }).save()
+  ));
+}
+
+function createItemsEmbed(selectedItems) {
+  return new EmbedBuilder()
+    .setTitle("📜 Itens Ilegais Selecionados")
+    .setDescription(
+      selectedItems.map(value => {
+        const item = itensIlegais.find(i => i.value === value);
+        return item?.label || "Item Desconhecido";
+      }).join("\n")
+    )
+    .setColor("#0099ff")
+    .setTimestamp();
+}
+
+async function handleError(interaction) {
+  const errorMessage = "❌ **Ocorreu um erro ao processar sua solicitação.**";
+  if (!interaction.replied && !interaction.deferred) {
+    await interaction.reply({ content: errorMessage, ephemeral: true });
+  } else {
+    await interaction.followUp({ content: errorMessage, ephemeral: true });
+  }
+}
