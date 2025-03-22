@@ -246,6 +246,88 @@ function saveChannels(data) {
 // Carrega os canais criados do arquivo JSON
 const createdChannels = loadChannels();
 
+// Funções auxiliares
+const createServiceSelectMenu = (tunagem) => {
+  return new StringSelectMenuBuilder()
+    .setCustomId("tunagem_menu")
+    .setMinValues(1)
+    .setMaxValues(6)
+    .setPlaceholder("Selecione até 6 serviços...")
+    .addOptions(
+      tunagem.map(item => 
+        new StringSelectMenuOptionBuilder()
+          .setLabel(item.label)
+          .setDescription(item.description)
+          .setValue(item.value)
+      )
+    );
+};
+
+const createConfirmButton = () => {
+  return new ButtonBuilder()
+    .setCustomId("confirmar")
+    .setLabel("Confirmar")
+    .setStyle(ButtonStyle.Success)
+    .setEmoji("✅");
+};
+
+const createEmbed = ({ title, description, color }) => {
+  return new EmbedBuilder()
+    .setTitle(title)
+    .setDescription(description)
+    .setColor(color);
+};
+
+const handleServiceSelection = async (interaction, selectedServices, tunagem, rows) => {
+  const description = selectedServices
+    .map(value => tunagem.find(item => item.value === value)?.label || "Serviço desconhecido")
+    .join("\n") || "Nenhum serviço selecionado.";
+
+  const updatedEmbed = createEmbed({
+    title: "Serviços Selecionados",
+    description,
+    color: "#0099ff"
+  });
+
+  await interaction.update({
+    embeds: [updatedEmbed],
+    components: rows
+  });
+};
+
+const handleImageSubmission = async (message, interaction, selectedServices, deleteDelay) => {
+  const attachment = message.attachments.first();
+  if (!attachment) {
+    await interaction.followUp({
+      content: "❌ Nenhuma imagem foi enviada. Envie uma imagem de comprovante neste canal.",
+      flags: 64
+    });
+    return;
+  }
+
+  const embedRecebido = createEmbed({
+    title: "Comprovante gerado com sucesso!",
+    description: `Serviços realizados:\n${selectedServices.join("\n")}`,
+    color: "#00ff00"
+  })
+  .setImage(attachment.url)
+  .setFooter({
+    text: `Gerado por ${interaction.user.tag}`,
+    iconURL: interaction.user.displayAvatarURL()
+  })
+  .setTimestamp();
+
+  // Envia confirmações e registros
+  await Promise.all([
+    interaction.followUp({ content: "Imagem recebida com sucesso!", embeds: [embedRecebido], flags: 64 }),
+    webhookClientRecibo.send({ embeds: [embedRecebido] }),
+    webhookClientLog.send({ embeds: [embedRecebido] })
+  ]);
+
+  // Agenda a deleção da mensagem
+  setTimeout(() => message.delete().catch(console.error), deleteDelay);
+};
+
 module.exports = {
   name: Events.InteractionCreate,
   async execute(interaction) {
@@ -376,147 +458,63 @@ module.exports = {
       let descriptionEmbed = "";
 
       // Evento de seleção de serviços
+      // Handler para o botão de recibo
       if (customId === "recibo") {
-        const selectMenu = new StringSelectMenuBuilder()
-          .setCustomId("tunagem_menu")
-          .setMinValues(1)
-          .setMaxValues(6)
-          .setPlaceholder("Selecione até 6 serviços...")
-          .addOptions(
-            tunagem.map((item) =>
-              new StringSelectMenuOptionBuilder()
-                .setLabel(item.label)
-                .setDescription(item.description)
-                .setValue(item.value)
-            )
-          );
+        try {
+          const TIMEOUT_MENU = 30_000; // 30 segundos
+          const TIMEOUT_IMAGE = 120_000; // 2 minutos
+          const DELETE_DELAY = 10_000; // 10 segundos
 
-        const buttonConfirma = new ButtonBuilder()
-          .setCustomId("confirmar")
-          .setLabel("Confirmar")
-          .setStyle(ButtonStyle.Success)
-          .setEmoji("✅");
-
-        const rowSelect = new ActionRowBuilder().addComponents(selectMenu);
-        const rowButton = new ActionRowBuilder().addComponents(buttonConfirma);
-
-        const embed = new EmbedBuilder()
-          .setTitle("Serviços Selecionados")
-          .setDescription("Nenhum serviço selecionado ainda.")
-          .setColor("#0099ff");
-
-        await interaction.reply({
-          embeds: [embed],
-          components: [rowSelect, rowButton],
-          flags: 64,
-        });
-
-        const filter = (i) =>
-          (i.customId === "tunagem_menu" || i.customId === "confirmar") &&
-          i.user.id === interaction.user.id;
-
-        const componentCollector =
-          interaction.channel.createMessageComponentCollector({
-            filter,
-            time: 30_000,
+          // Criação dos componentes UI
+          const selectMenu = createServiceSelectMenu(tunagem);
+          const buttonConfirma = createConfirmButton();
+          const rows = createActionRows(selectMenu, buttonConfirma);
+          
+          // Estado inicial
+          const initialEmbed = createEmbed({
+            title: "Serviços Selecionados",
+            description: "Nenhum serviço selecionado ainda.",
+            color: "#0099ff"
           });
 
-        componentCollector.on("collect", async (i) => {
-          if (i.customId === "tunagem_menu") {
-            selectedServicesGlobal = i.values; // Atualiza as seleções globalmente
+          // Envia mensagem inicial
+          const reply = await interaction.reply({
+            embeds: [initialEmbed],
+            components: rows,
+            flags: 64,
+            fetchReply: true
+          });
 
-            descriptionEmbed =
-              selectedServicesGlobal
-                .map(
-                  (value) =>
-                    tunagem.find((item) => item.value === value)?.label ||
-                    "Serviço desconhecido"
-                )
-                .join("\n") || "Nenhum serviço selecionado.";
+          // Configura coletores
+          const componentCollector = createComponentCollector(interaction, TIMEOUT_MENU);
+          let selectedServices = [];
 
-            const updatedEmbed = new EmbedBuilder()
-              .setTitle("Serviços Selecionados")
-              .setDescription(descriptionEmbed)
-              .setColor("#0099ff");
+          // Handler de componentes
+          componentCollector.on("collect", async (i) => {
+            if (i.customId === "tunagem_menu") {
+              selectedServices = i.values;
+              await handleServiceSelection(i, selectedServices, tunagem, rows);
+            }
 
-            await i.update({
-              embeds: [updatedEmbed],
-              components: [rowSelect, rowButton],
-            });
-          }
+            if (i.customId === "confirmar") {
+              await handleConfirmation(i, selectedServices);
+              const imageCollector = createImageCollector(interaction, TIMEOUT_IMAGE);
+              
+              imageCollector.on("collect", async (message) => {
+                await handleImageSubmission(message, interaction, selectedServices, DELETE_DELAY);
+              });
 
-          // Evento de confirmação
-          if (i.customId === "confirmar") {
-            await i.update({
-              embeds: [
-                new EmbedBuilder()
-                  .setTitle("Recibo Confirmado!")
-                  .setDescription(
-                    `Serviços confirmados:\n${descriptionEmbed}\n\nAgora, envie uma imagem de comprovante neste canal. Você tem 2 minutos.`
-                  )
-                  .setColor("#00ff00"),
-              ],
-              components: [],
-            });
+              imageCollector.on("end", handleCollectorTimeout(interaction));
+            }
+          });
 
-            const filter = (m) =>
-              m.author.id === interaction.user.id && m.attachments.size > 0;
-            const collector = interaction.channel.createMessageCollector({
-              filter,
-              time: 120_000,
-            });
-
-            collector.on("collect", async (message) => {
-              const attachment = message.attachments.first(); // Pega a primeira imagem enviada
-
-              if (attachment) {
-                const embedRecebido = new EmbedBuilder()
-                  .setTitle("Comprovante gerado com sucesso!")
-                  .setDescription(`Serviços realizados:\n${descriptionEmbed}`)
-                  .setImage(attachment.url)
-                  .setFooter({
-                    text: `Gerado por ${interaction.user.tag}`,
-                    iconURL: interaction.user.displayAvatarURL(),
-                  })
-                  .setColor("#00ff00")
-                  .setTimestamp();
-
-                await interaction.followUp({
-                  content: "Imagem recebida com sucesso!",
-                  embeds: [embedRecebido],
-                  flags: 64,
-                });
-                webhookClientRecibo.send({
-                  embeds: [embedRecebido],
-                });
-                webhookClientLog.send({
-                  embeds: [embedRecebido],
-                });
-
-                // Espera 5 segundos antes de apagar a mensagem
-                setTimeout(() => {
-                  message.delete().catch(console.error); // Apaga a mensagem com a imagem
-                }, 10000);
-                collector.stop();
-              } else {
-                await interaction.followUp({
-                  content:
-                    "❌ Nenhuma imagem foi enviada. Envie uma imagem de comprovante neste canal.",
-                  flags: 64,
-                });
-              }
-            });
-
-            collector.on("end", (collected, reason) => {
-              if (collected.size === 0) {
-                interaction.followUp({
-                  content: "Tempo esgotado! Nenhuma imagem foi enviada.",
-                  flags: 64,
-                });
-              }
-            });
-          }
-        });
+        } catch (error) {
+          console.error("Erro no processamento do recibo:", error);
+          await interaction.followUp({
+            content: "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
+            flags: 64
+          });
+        }
       }
       const modalDrogas = new ModalBuilder()
         .setCustomId("catalogar_itens")
@@ -540,13 +538,14 @@ module.exports = {
       );
 
       if (customId === "reciboBau") {
-        await interaction.deferReply({ ephemeral: true }); // Adia a resposta para evitar timeout
+        await interaction.deferReply({ ephemeral: true });
 
+        // Cria o menu de seleção de itens
         const selectMenuBau = new StringSelectMenuBuilder()
           .setCustomId("itens_ilegais_menu")
           .setMinValues(1)
           .setMaxValues(6)
-          .setPlaceholder("Selecione até 6 serviços...")
+          .setPlaceholder("Selecione até 6 itens...")
           .addOptions(
             itensIlegais.map((item) =>
               new StringSelectMenuOptionBuilder()
@@ -556,6 +555,7 @@ module.exports = {
             )
           );
 
+        // Cria o botão de confirmação
         const buttonConfirma = new ButtonBuilder()
           .setCustomId("confirmar_bau")
           .setLabel("Confirmar")
@@ -567,165 +567,159 @@ module.exports = {
         const rowButton = new ActionRowBuilder().addComponents(buttonConfirma);
 
         await interaction.editReply({
-          content: "🔍 **Escolha os itens ilegais que deseja catalogar:**",
+          content: "🔍 **Selecione os itens ilegais para catalogar:**",
           components: [rowSelect, rowButton],
         });
 
-        const filter = (i) =>
-          ["itens_ilegais_menu", "confirmar_bau"].includes(i.customId) &&
-          i.user.id === interaction.user.id;
-
+        // Configuração do coletor de interações
         const collector = interaction.channel.createMessageComponentCollector({
-          filter,
-          time: 30_000,
+          filter: (i) => 
+            ["itens_ilegais_menu", "confirmar_bau"].includes(i.customId) &&
+            i.user.id === interaction.user.id,
+          time: 60_000, // Aumentado para 1 minuto
         });
 
+        let selectedServicesGlobalBau = [];
+
         collector.on("collect", async (i) => {
-          if (i.customId === "itens_ilegais_menu") {
-            selectedServicesGlobalBau = i.values;
+          try {
+            if (i.customId === "itens_ilegais_menu") {
+              selectedServicesGlobalBau = i.values;
 
-            const descriptionEmbedBau = i.values.length
-              ? i.values
-                  .map(
-                    (value) =>
-                      itensIlegais.find((item) => item.value === value)
-                        ?.label || "Desconhecido"
-                  )
-                  .join("\n")
-              : "Nenhum serviço selecionado.";
+              const descriptionEmbedBau = i.values.length
+                ? i.values
+                    .map((value) => {
+                      const item = itensIlegais.find((item) => item.value === value);
+                      return item?.label || "Item Desconhecido";
+                    })
+                    .join("\n")
+                : "Nenhum item selecionado.";
 
-            const updatedEmbed = new EmbedBuilder()
-              .setTitle("📜 Itens Ilegais Selecionados")
-              .setDescription(`🛠 **Itens Escolhidos:**\n${descriptionEmbedBau}`)
-              .setColor("#0099ff");
+              const updatedEmbed = new EmbedBuilder()
+                .setTitle("📜 Itens Ilegais Selecionados")
+                .setDescription(`🛠 **Itens:**\n${descriptionEmbedBau}`)
+                .setColor("#0099ff")
+                .setTimestamp();
 
-            const updatedButton = new ButtonBuilder()
-              .setCustomId("confirmar_bau")
-              .setLabel("Confirmar")
-              .setStyle(ButtonStyle.Success)
-              .setEmoji("✅")
-              .setDisabled(i.values.length === 0);
+              const updatedButton = new ButtonBuilder()
+                .setCustomId("confirmar_bau")
+                .setLabel("Confirmar")
+                .setStyle(ButtonStyle.Success)
+                .setEmoji("✅")
+                .setDisabled(!i.values.length);
 
-            const rowButtonUpdated = new ActionRowBuilder().addComponents(
-              updatedButton
-            );
-
-            await i.update({
-              embeds: [updatedEmbed],
-              components: [rowSelect, rowButtonUpdated],
-            });
-          } else if (i.customId === "confirmar_bau") {
-            if (!selectedServicesGlobalBau.length) {
-              return i.reply({
-                content: "❌ **Nenhum item ilegal foi selecionado.**",
-                ephemeral: true,
+              await i.update({
+                embeds: [updatedEmbed],
+                components: [
+                  rowSelect,
+                  new ActionRowBuilder().addComponents(updatedButton)
+                ],
               });
-            }
 
-            await i.showModal(modalDrogas);
+            } else if (i.customId === "confirmar_bau") {
+              if (!selectedServicesGlobalBau.length) {
+                return await i.reply({
+                  content: "❌ **Selecione pelo menos um item ilegal.**",
+                  ephemeral: true,
+                });
+              }
 
-            try {
+              await i.showModal(modalDrogas);
+
               const modalInteraction = await i.awaitModalSubmit({
                 filter: (modalI) => modalI.customId === "catalogar_itens",
                 time: 120_000,
               });
 
-              let qtd = modalInteraction.fields
-                .getTextInputValue("quantidade_itens")
-                .replace(/,/g, "");
-              let quantidade = parseInt(qtd, 10);
-              let tipo = modalInteraction.fields.getTextInputValue("tipo_item");
-
-              if (isNaN(quantidade)) {
-                return modalInteraction.reply({
-                  content: "❌ Quantidade inválida! Digite um número válido.",
-                  ephemeral: true,
-                });
-              }
-
-              const item = itensIlegais.find(
-                (it) => it.value === selectedServicesGlobalBau[0]
+              const quantidade = parseInt(
+                modalInteraction.fields
+                  .getTextInputValue("quantidade_itens")
+                  .replace(/,/g, ""),
+                10
               );
 
-              const embedRecebido = new EmbedBuilder()
-                .setTitle("✅ Comprovante gerado com sucesso!")
-                .setDescription(
-                  `📦 **Itens Catalogados:**\n${selectedServicesGlobalBau
-                    .map(
-                      (s) =>
-                        `- ${itensIlegais.find((it) => it.value === s)?.label}`
-                    )
-                    .join("\n")}`
-                )
-                .setColor("#00ff00")
-                .setTimestamp()
-                .setFooter({
-                  text: `Gerado por ${interaction.user.tag}`,
-                  iconURL: interaction.user.displayAvatarURL(),
+              const tipo = modalInteraction.fields.getTextInputValue("tipo_item");
+
+              if (isNaN(quantidade) || quantidade <= 0) {
+                return await modalInteraction.reply({
+                  content: "❌ **Digite uma quantidade válida maior que zero.**",
+                  ephemeral: true,
+                });
+              }
+
+              const selectedItems = selectedServicesGlobalBau.map(value => 
+                itensIlegais.find(item => item.value === value)
+              ).filter(Boolean);
+
+              // Salva cada item selecionado
+              try {
+                await Promise.all(selectedItems.map(item =>
+                  new ItemIlegal({
+                    userId: interaction.user.id,
+                    item: item.label,
+                    quantidade,
+                    tipo,
+                  }).save()
+                ));
+
+                const catalogEmbed = new EmbedBuilder()
+                  .setColor("Green")
+                  .setTitle("📜 Itens Ilegais Catalogados")
+                  .addFields([
+                    { 
+                      name: "📌 Itens", 
+                      value: selectedItems.map(item => item.label).join("\n") 
+                    },
+                    { name: "📊 Quantidade", value: quantidade.toString() },
+                    { name: "📦 Tipo", value: tipo },
+                  ])
+                  .setFooter({
+                    text: `Catalogado por ${interaction.user.tag}`,
+                    iconURL: interaction.user.displayAvatarURL(),
+                  })
+                  .setTimestamp();
+
+                await webhookClientReciboIlegal.send({
+                  content: `${interaction.user} catalogou itens ilegais! 🚨`,
+                  embeds: [catalogEmbed],
                 });
 
-              try {
-                await new ItemIlegal({
-                  userId: interaction.user.id,
-                  item: item?.label || "Desconhecido",
-                  quantidade,
-                  tipo,
-                }).save();
-                console.log("✅ Item salvo no MongoDB!");
+                await modalInteraction.reply({
+                  content: "✅ **Itens catalogados com sucesso!**",
+                  ephemeral: true,
+                });
+
+                collector.stop("success");
+
               } catch (err) {
                 console.error("❌ Erro ao salvar no MongoDB:", err);
-                return modalInteraction.reply({
-                  content: "❌ Ocorreu um erro ao salvar os dados.",
+                await modalInteraction.reply({
+                  content: "❌ **Ocorreu um erro ao salvar os dados.**",
                   ephemeral: true,
                 });
-              }
-
-              await webhookClientReciboIlegal.send({
-                content: `${interaction.user} catalogou um item ilegal! 🚨`,
-                embeds: [
-                  new EmbedBuilder()
-                    .setColor("Green")
-                    .setTitle("📜 Item Ilegal Catalogado")
-                    .addFields([
-                      { name: "📌 Item", value: item?.label || "Desconhecido" },
-                      { name: "📊 Quantidade", value: qtd },
-                      { name: "📦 Tipo", value: tipo },
-                    ])
-                    .setFooter({
-                      text: `Catalogado por ${interaction.user.tag}`,
-                      iconURL: interaction.user.displayAvatarURL(),
-                    })
-                    .setTimestamp(),
-                ],
-              });
-
-              await modalInteraction.reply({
-                content: "✅ **Item catalogado com sucesso!**",
-                ephemeral: true,
-              });
-            } catch (error) {
-              if (error.name === "Error [INTERACTION_COLLECTOR_ERROR]") {
-                await i.followUp({
-                  content:
-                    "⏳ **Tempo esgotado!** O modal foi fechado sem resposta.",
-                  ephemeral: true,
-                });
-              } else {
-                console.error("❌ Erro ao processar o modal:", error);
               }
             }
+          } catch (error) {
+            console.error("❌ Erro na interação:", error);
+            await i.reply({
+              content: "❌ **Ocorreu um erro ao processar sua solicitação.**",
+              ephemeral: true,
+            });
           }
         });
 
-        collector.on("end", async () => {
-          await interaction.editReply({
-            content: "⏳ **Tempo esgotado!** O modal foi fechado sem resposta.",
-            components: [],
-          });
+        collector.on("end", async (collected, reason) => {
+          if (reason !== "success") {
+            await interaction.editReply({
+              content: "⏳ **Tempo esgotado!** Interação encerrada.",
+              components: [],
+            });
+          }
         });
       }
     }
 
+                        
     // Processa modais
     if (interaction.isModalSubmit()) {
       const { customId } = interaction;
