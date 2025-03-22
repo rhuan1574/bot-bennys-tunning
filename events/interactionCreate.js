@@ -1047,42 +1047,158 @@ async function handleMenuSelection(interaction, selectedItems) {
   });
 }
 
-async function handleConfirmation(interaction, selectedItems, originalInteraction) {
-  if (!selectedItems.length) {
-    return await interaction.reply({
-      content: "❌ **Selecione pelo menos um item ilegal.**",
-      ephemeral: true
-    });
-  }
-
-  const modal = createItemModal();
-  await interaction.showModal(modal);
-
+async function handleConfirmation(i, selectedItems, interaction) {
   try {
-    const modalResponse = await interaction.awaitModalSubmit({
-      filter: (i) => i.customId === "catalogar_itens",
-      time: TIMEOUT_MODAL
-    });
-
-    const { quantidade, tipo } = validateModalInputs(modalResponse);
-    if (!quantidade) {
-      return await modalResponse.reply({
-        content: "❌ **Digite uma quantidade válida maior que zero.**",
+    // Validação inicial
+    if (!selectedItems || selectedItems.length === 0) {
+      return await i.reply({
+        content: "❌ **Selecione pelo menos um item ilegal.**",
         ephemeral: true
       });
     }
 
-    await saveItemsToDatabase(selectedItems, quantidade, tipo, originalInteraction);
-    await sendWebhookNotification(selectedItems, quantidade, tipo, originalInteraction);
+    // Criar modal com validações
+    const modal = new ModalBuilder()
+      .setCustomId("catalogar_itens")
+      .setTitle("📦 Catalogar Itens Ilegais");
 
-    await modalResponse.reply({
-      content: "✅ **Itens catalogados com sucesso!**",
-      ephemeral: true
+    const quantidadeInput = new TextInputBuilder()
+      .setCustomId("quantidade_itens")
+      .setLabel("📊 QUANTIDADE DE ITENS:")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setPlaceholder("Digite apenas números")
+      .setMinLength(1)
+      .setMaxLength(6);
+
+    const tipoInput = new TextInputBuilder()
+      .setCustomId("tipo_item")
+      .setLabel("📌 TIPO DE ITEM:")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setPlaceholder("Ex: Drogas, Armas, etc")
+      .setMinLength(1)
+      .setMaxLength(50);
+
+    modal.addComponents(
+      new ActionRowBuilder().addComponents(quantidadeInput),
+      new ActionRowBuilder().addComponents(tipoInput)
+    );
+
+    await i.showModal(modal);
+
+    // Aguardar resposta do modal com timeout
+    const modalResponse = await i.awaitModalSubmit({
+      filter: (modalInteraction) => 
+        modalInteraction.customId === "catalogar_itens" && 
+        modalInteraction.user.id === i.user.id,
+      time: 120_000
+    }).catch(() => null);
+
+    if (!modalResponse) {
+      return await i.followUp({
+        content: "⏳ **Tempo esgotado!** Tente novamente.",
+        ephemeral: true
+      });
+    }
+
+    // Validar inputs do modal
+    const quantidade = parseInt(
+      modalResponse.fields.getTextInputValue("quantidade_itens").trim(),
+      10
+    );
+
+    const tipo = modalResponse.fields.getTextInputValue("tipo_item").trim();
+
+    // Validações adicionais
+    if (isNaN(quantidade) || quantidade <= 0) {
+      return await modalResponse.reply({
+        content: "❌ **A quantidade deve ser um número válido maior que zero.**",
+        ephemeral: true
+      });
+    }
+
+    if (!tipo) {
+      return await modalResponse.reply({
+        content: "❌ **O tipo do item não pode estar vazio.**",
+        ephemeral: true
+      });
+    }
+
+    // Processar itens selecionados
+    const itemsData = selectedItems.map(value => {
+      const item = itensIlegais.find(i => i.value === value);
+      return {
+        userId: interaction.user.id,
+        item: item?.label || "Item Desconhecido",
+        quantidade,
+        tipo
+      };
     });
+
+    // Salvar no banco de dados
+    try {
+      await Promise.all(itemsData.map(data => 
+        new ItemIlegal(data).save()
+      ));
+
+      // Criar embed de confirmação
+      const catalogEmbed = new EmbedBuilder()
+        .setColor("#00ff00")
+        .setTitle("📜 Itens Ilegais Catalogados")
+        .addFields([
+          { 
+            name: "📌 Itens", 
+            value: itemsData.map(data => data.item).join("\n"),
+            inline: true
+          },
+          { 
+            name: "📊 Quantidade", 
+            value: quantidade.toString(),
+            inline: true
+          },
+          { 
+            name: "📦 Tipo", 
+            value: tipo,
+            inline: true
+          }
+        ])
+        .setFooter({
+          text: `Catalogado por ${interaction.user.tag}`,
+          iconURL: interaction.user.displayAvatarURL()
+        })
+        .setTimestamp();
+
+      // Enviar confirmações
+      await Promise.all([
+        modalResponse.reply({
+          content: "✅ **Itens catalogados com sucesso!**",
+          ephemeral: true,
+          embeds: [catalogEmbed]
+        }),
+        webhookClientReciboIlegal.send({
+          content: `${interaction.user} catalogou itens ilegais! 🚨`,
+          embeds: [catalogEmbed]
+        })
+      ]);
+
+    } catch (dbError) {
+      console.error("❌ Erro ao salvar no banco de dados:", dbError);
+      await modalResponse.reply({
+        content: "❌ **Erro ao salvar os dados. Tente novamente.**",
+        ephemeral: true
+      });
+    }
 
   } catch (error) {
     console.error("❌ Erro no processamento do modal:", error);
-    await handleError(interaction);
+    const errorMessage = "❌ **Ocorreu um erro ao processar sua solicitação.**\nTente novamente ou contate um administrador.";
+    
+    if (i.replied || i.deferred) {
+      await i.followUp({ content: errorMessage, ephemeral: true });
+    } else {
+      await i.reply({ content: errorMessage, ephemeral: true });
+    }
   }
 }
 
