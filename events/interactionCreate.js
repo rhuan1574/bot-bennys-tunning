@@ -1057,7 +1057,7 @@ async function handleConfirmation(i, selectedItems, interaction) {
       });
     }
 
-    // Criar modal com validações
+    // Criar e mostrar o modal
     const modal = new ModalBuilder()
       .setCustomId("catalogar_itens")
       .setTitle("📦 Catalogar Itens Ilegais");
@@ -1087,7 +1087,7 @@ async function handleConfirmation(i, selectedItems, interaction) {
 
     await i.showModal(modal);
 
-    // Aguardar resposta do modal com timeout
+    // Aguardar resposta do modal
     const modalResponse = await i.awaitModalSubmit({
       filter: (modalInteraction) => 
         modalInteraction.customId === "catalogar_itens" && 
@@ -1102,102 +1102,129 @@ async function handleConfirmation(i, selectedItems, interaction) {
       });
     }
 
-    // Validar inputs do modal
+    // Processar dados do modal
     const quantidade = parseInt(
-      modalResponse.fields.getTextInputValue("quantidade_itens").trim(),
+      modalResponse.fields.getTextInputValue("quantidade_itens").trim().replace(/\D/g, ''),
       10
     );
-
     const tipo = modalResponse.fields.getTextInputValue("tipo_item").trim();
 
-    // Validações adicionais
-    if (isNaN(quantidade) || quantidade <= 0) {
+    // Validações
+    if (isNaN(quantidade) || quantidade <= 0 || quantidade > 999999) {
       return await modalResponse.reply({
-        content: "❌ **A quantidade deve ser um número válido maior que zero.**",
+        content: "❌ **Quantidade inválida! Digite um número entre 1 e 999999.**",
         ephemeral: true
       });
     }
 
-    if (!tipo) {
+    if (!tipo || tipo.length < 1 || tipo.length > 50) {
       return await modalResponse.reply({
-        content: "❌ **O tipo do item não pode estar vazio.**",
+        content: "❌ **Tipo de item inválido! Digite entre 1 e 50 caracteres.**",
         ephemeral: true
       });
     }
 
-    // Processar itens selecionados
-    const itemsData = selectedItems.map(value => {
-      const item = itensIlegais.find(i => i.value === value);
+    // Preparar dados para salvar
+    const itemsToSave = selectedItems.map(value => {
+      const itemInfo = itensIlegais.find(i => i.value === value);
+      if (!itemInfo) {
+        throw new Error(`Item não encontrado: ${value}`);
+      }
+      
       return {
         userId: interaction.user.id,
-        item: item?.label || "Item Desconhecido",
-        quantidade,
-        tipo
+        userName: interaction.user.tag,
+        item: itemInfo.label,
+        quantidade: quantidade,
+        tipo: tipo,
+        timestamp: new Date(),
+        guildId: interaction.guildId
       };
     });
 
-    // Salvar no banco de dados
-    try {
-      await Promise.all(itemsData.map(data => 
-        new ItemIlegal(data).save()
-      ));
+    // Salvar no banco de dados com retry
+    let savedItems = null;
+    let retryCount = 0;
+    const maxRetries = 3;
 
-      // Criar embed de confirmação
-      const catalogEmbed = new EmbedBuilder()
-        .setColor("#00ff00")
-        .setTitle("📜 Itens Ilegais Catalogados")
-        .addFields([
-          { 
-            name: "📌 Itens", 
-            value: itemsData.map(data => data.item).join("\n"),
-            inline: true
-          },
-          { 
-            name: "📊 Quantidade", 
-            value: quantidade.toString(),
-            inline: true
-          },
-          { 
-            name: "📦 Tipo", 
-            value: tipo,
-            inline: true
-          }
-        ])
-        .setFooter({
-          text: `Catalogado por ${interaction.user.tag}`,
-          iconURL: interaction.user.displayAvatarURL()
-        })
-        .setTimestamp();
-
-      // Enviar confirmações
-      await Promise.all([
-        modalResponse.reply({
-          content: "✅ **Itens catalogados com sucesso!**",
-          ephemeral: true,
-          embeds: [catalogEmbed]
-        }),
-        webhookClientReciboIlegal.send({
-          content: `${interaction.user} catalogou itens ilegais! 🚨`,
-          embeds: [catalogEmbed]
-        })
-      ]);
-
-    } catch (dbError) {
-      console.error("❌ Erro ao salvar no banco de dados:", dbError);
-      await modalResponse.reply({
-        content: "❌ **Erro ao salvar os dados. Tente novamente.**",
-        ephemeral: true
-      });
+    while (retryCount < maxRetries && !savedItems) {
+      try {
+        savedItems = await Promise.all(
+          itemsToSave.map(async (item) => {
+            const newItem = new ItemIlegal(item);
+            return await newItem.save();
+          })
+        );
+        break;
+      } catch (dbError) {
+        console.error(`Tentativa ${retryCount + 1} falhou:`, dbError);
+        retryCount++;
+        if (retryCount === maxRetries) {
+          throw dbError;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
     }
 
+    // Criar embed de sucesso
+    const successEmbed = new EmbedBuilder()
+      .setColor("#00ff00")
+      .setTitle("✅ Itens Catalogados com Sucesso")
+      .addFields([
+        {
+          name: "📦 Itens",
+          value: itemsToSave.map(item => `• ${item.item}`).join('\n'),
+          inline: true
+        },
+        {
+          name: "📊 Quantidade",
+          value: quantidade.toString(),
+          inline: true
+        },
+        {
+          name: "📝 Tipo",
+          value: tipo,
+          inline: true
+        }
+      ])
+      .setFooter({
+        text: `Registrado por ${interaction.user.tag}`,
+        iconURL: interaction.user.displayAvatarURL()
+      })
+      .setTimestamp();
+
+    // Enviar confirmações
+    await Promise.all([
+      modalResponse.reply({
+        content: "✅ **Itens catalogados com sucesso!**",
+        embeds: [successEmbed],
+        ephemeral: true
+      }),
+      webhookClientReciboIlegal.send({
+        embeds: [successEmbed]
+      })
+    ]);
+
   } catch (error) {
-    console.error("❌ Erro no processamento do modal:", error);
-    const errorMessage = "❌ **Ocorreu um erro ao processar sua solicitação.**\nTente novamente ou contate um administrador.";
+    console.error("Erro ao processar catalogação:", error);
     
-    if (i.replied || i.deferred) {
-      await i.followUp({ content: errorMessage, ephemeral: true });
+    let errorMessage = "❌ **Erro ao salvar os dados. Tente novamente.**";
+    if (error.code === 11000) {
+      errorMessage = "❌ **Este item já foi catalogado recentemente.**";
+    } else if (error.name === "ValidationError") {
+      errorMessage = "❌ **Dados inválidos. Verifique as informações e tente novamente.**";
+    }
+
+    if (modalResponse && !modalResponse.replied) {
+      await modalResponse.reply({
+        content: errorMessage,
+        ephemeral: true
+      });
     } else {
-      await i.reply({ content: errorMessage, ephemeral: true });
+      await i.followUp({
+        content: errorMessage,
+        ephemeral: true
+      });
     }
   }
 }
