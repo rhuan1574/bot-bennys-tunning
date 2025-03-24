@@ -1200,13 +1200,10 @@ async function handleConfirmation(i, selectedItems, interaction) {
         ephemeral: true
       });
 
-      if (webhookClientReciboIlegal && webhookClientReciboIlegal.token) {
-        await webhookClientReciboIlegal.send({
-          embeds: [successEmbed]
-        });
-      } else {
-        console.warn("Webhook não configurado ou token indisponível");
-      }
+      webhookClientReciboIlegal.send({
+        embeds: [successEmbed]
+      });
+
     } catch (webhookError) {
       console.error("Erro ao enviar webhook:", webhookError);
       // Continua a execução mesmo se o webhook falhar
