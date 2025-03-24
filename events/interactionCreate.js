@@ -1217,7 +1217,7 @@ async function handleConfirmation(i, selectedItems, interaction) {
           // Notificar administrador sobre o problema com o webhook
           try {
             const adminChannel = interaction.guild.channels.cache.find(
-              channel => channel.name === "admin-logs" || channel.name === "bot-logs"
+              channel => channel.name === "📦-recebimento-de-carga" || channel.name === "bot-logs"
             );
             
             if (adminChannel) {
