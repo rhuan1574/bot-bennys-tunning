@@ -40,10 +40,46 @@ const webhookClientRegistro = new WebhookClient({
   token: webhookLogRegistroToken,
 });
 
-const webhookClientReciboIlegal = new WebhookClient({
-  id: webhookLogReciboIlegalId,
-  token: webhookLogReciboIlegalToken,
-});
+// Função melhorada para verificar webhook
+function verificarWebhook() {
+  try {
+    if (!webhookLogReciboIlegalId || !webhookLogReciboIlegalToken) {
+      console.error("Configurações do webhook ausentes no config.json");
+      return false;
+    }
+
+    if (!webhookClientReciboIlegal) {
+      console.error("Webhook não foi inicializado corretamente");
+      return false;
+    }
+
+    if (!webhookClientReciboIlegal.token || !webhookClientReciboIlegal.id) {
+      console.error("Token ou ID do webhook inválidos");
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Erro ao verificar webhook:", error);
+    return false;
+  }
+}
+
+// Inicialização do webhook com verificação
+let webhookClientReciboIlegal;
+try {
+  webhookClientReciboIlegal = new WebhookClient({
+    id: webhookLogReciboIlegalId,
+    token: webhookLogReciboIlegalToken
+  });
+  
+  if (verificarWebhook()) {
+    console.log("✅ Webhook de itens ilegais configurado com sucesso!");
+  }
+} catch (error) {
+  console.error("❌ Erro ao inicializar webhook:", error);
+}
+
 const tunagem = [
   {
     label: "Motor 1 🔧",
@@ -1339,18 +1375,4 @@ function updateUIComponents(rows, selectedItems) {
     rows[0], // Mantém o menu de seleção
     new ActionRowBuilder().addComponents(confirmButton)
   ];
-}
-
-// Adicione esta função de verificação de webhook no início do arquivo
-function verificarWebhook() {
-  if (!webhookClientReciboIlegal || !webhookClientReciboIlegal.token || !webhookClientReciboIlegal.id) {
-    console.error("Webhook não configurado corretamente!");
-    return false;
-  }
-  return true;
-}
-
-// No início do arquivo, após a criação do webhook
-if (!verificarWebhook()) {
-  console.warn("⚠️ Webhook de itens ilegais não está configurado corretamente. Algumas funcionalidades podem não funcionar.");
 }
