@@ -1048,8 +1048,9 @@ async function handleMenuSelection(interaction, selectedItems) {
 }
 
 async function handleConfirmation(i, selectedItems, interaction) {
+  let modalResponse = null; // Definir no escopo mais alto da função
+  
   try {
-    // Validação inicial
     if (!selectedItems || selectedItems.length === 0) {
       return await i.reply({
         content: "❌ **Selecione pelo menos um item ilegal.**",
@@ -1057,7 +1058,6 @@ async function handleConfirmation(i, selectedItems, interaction) {
       });
     }
 
-    // Criar e mostrar o modal
     const modal = new ModalBuilder()
       .setCustomId("catalogar_itens")
       .setTitle("📦 Catalogar Itens Ilegais");
@@ -1087,8 +1087,7 @@ async function handleConfirmation(i, selectedItems, interaction) {
 
     await i.showModal(modal);
 
-    // Aguardar resposta do modal
-    const modalResponse = await i.awaitModalSubmit({
+    modalResponse = await i.awaitModalSubmit({
       filter: (modalInteraction) => 
         modalInteraction.customId === "catalogar_itens" && 
         modalInteraction.user.id === i.user.id,
@@ -1193,17 +1192,25 @@ async function handleConfirmation(i, selectedItems, interaction) {
       })
       .setTimestamp();
 
-    // Enviar confirmações
-    await Promise.all([
-      modalResponse.reply({
+    // Verificar se o webhook está disponível antes de usar
+    try {
+      await modalResponse.reply({
         content: "✅ **Itens catalogados com sucesso!**",
         embeds: [successEmbed],
         ephemeral: true
-      }),
-      webhookClientReciboIlegal.send({
-        embeds: [successEmbed]
-      })
-    ]);
+      });
+
+      if (webhookClientReciboIlegal && webhookClientReciboIlegal.token) {
+        await webhookClientReciboIlegal.send({
+          embeds: [successEmbed]
+        });
+      } else {
+        console.warn("Webhook não configurado ou token indisponível");
+      }
+    } catch (webhookError) {
+      console.error("Erro ao enviar webhook:", webhookError);
+      // Continua a execução mesmo se o webhook falhar
+    }
 
   } catch (error) {
     console.error("Erro ao processar catalogação:", error);
@@ -1215,16 +1222,20 @@ async function handleConfirmation(i, selectedItems, interaction) {
       errorMessage = "❌ **Dados inválidos. Verifique as informações e tente novamente.**";
     }
 
-    if (modalResponse && !modalResponse.replied) {
-      await modalResponse.reply({
-        content: errorMessage,
-        ephemeral: true
-      });
-    } else {
-      await i.followUp({
-        content: errorMessage,
-        ephemeral: true
-      });
+    try {
+      if (modalResponse && !modalResponse.replied) {
+        await modalResponse.reply({
+          content: errorMessage,
+          ephemeral: true
+        });
+      } else {
+        await i.followUp({
+          content: errorMessage,
+          ephemeral: true
+        });
+      }
+    } catch (replyError) {
+      console.error("Erro ao enviar mensagem de erro:", replyError);
     }
   }
 }
