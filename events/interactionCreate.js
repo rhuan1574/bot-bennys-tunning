@@ -1048,7 +1048,7 @@ async function handleMenuSelection(interaction, selectedItems) {
 }
 
 async function handleConfirmation(i, selectedItems, interaction) {
-  let modalResponse = null; // Definir no escopo mais alto da função
+  let modalResponse = null;
   
   try {
     if (!selectedItems || selectedItems.length === 0) {
@@ -1192,21 +1192,49 @@ async function handleConfirmation(i, selectedItems, interaction) {
       })
       .setTimestamp();
 
-    // Verificar se o webhook está disponível antes de usar
-    try {
-      await modalResponse.reply({
-        content: "✅ **Itens catalogados com sucesso!**",
-        embeds: [successEmbed],
-        ephemeral: true
-      });
+    // Primeiro, enviar resposta ao usuário
+    await modalResponse.reply({
+      content: "✅ **Itens catalogados com sucesso!**",
+      embeds: [successEmbed],
+      ephemeral: true
+    });
 
-      webhookClientReciboIlegal.send({
-        embeds: [successEmbed]
-      });
+    // Depois, tentar enviar para o webhook com verificações
+    if (webhookClientReciboIlegal) {
+      try {
+        // Verificar se o webhook está configurado corretamente
+        if (!webhookClientReciboIlegal.token || !webhookClientReciboIlegal.id) {
+          console.error("Webhook não configurado corretamente. Token ou ID ausente.");
+          return;
+        }
 
-    } catch (webhookError) {
-      console.error("Erro ao enviar webhook:", webhookError);
-      // Continua a execução mesmo se o webhook falhar
+        // Tentar enviar para o webhook
+        await webhookClientReciboIlegal.send({
+          embeds: [successEmbed]
+        }).catch(async (webhookError) => {
+          console.error("Erro ao enviar para webhook:", webhookError);
+          
+          // Notificar administrador sobre o problema com o webhook
+          try {
+            const adminChannel = interaction.guild.channels.cache.find(
+              channel => channel.name === "admin-logs" || channel.name === "bot-logs"
+            );
+            
+            if (adminChannel) {
+              await adminChannel.send({
+                content: "⚠️ **Erro no Webhook de Itens Ilegais**\nPor favor, verifique as configurações do webhook.",
+                ephemeral: true
+              });
+            }
+          } catch (notifyError) {
+            console.error("Erro ao notificar admin:", notifyError);
+          }
+        });
+      } catch (webhookError) {
+        console.error("Erro crítico no webhook:", webhookError);
+      }
+    } else {
+      console.error("Webhook não inicializado");
     }
 
   } catch (error) {
@@ -1217,6 +1245,9 @@ async function handleConfirmation(i, selectedItems, interaction) {
       errorMessage = "❌ **Este item já foi catalogado recentemente.**";
     } else if (error.name === "ValidationError") {
       errorMessage = "❌ **Dados inválidos. Verifique as informações e tente novamente.**";
+    } else if (error.code === "WebhookTokenUnavailable") {
+      errorMessage = "❌ **Erro interno do sistema. Um administrador foi notificado.**";
+      console.error("Erro de token do webhook:", error);
     }
 
     try {
@@ -1225,7 +1256,7 @@ async function handleConfirmation(i, selectedItems, interaction) {
           content: errorMessage,
           ephemeral: true
         });
-      } else {
+      } else if (i && !i.replied) {
         await i.followUp({
           content: errorMessage,
           ephemeral: true
@@ -1308,4 +1339,18 @@ function updateUIComponents(rows, selectedItems) {
     rows[0], // Mantém o menu de seleção
     new ActionRowBuilder().addComponents(confirmButton)
   ];
+}
+
+// Adicione esta função de verificação de webhook no início do arquivo
+function verificarWebhook() {
+  if (!webhookClientReciboIlegal || !webhookClientReciboIlegal.token || !webhookClientReciboIlegal.id) {
+    console.error("Webhook não configurado corretamente!");
+    return false;
+  }
+  return true;
+}
+
+// No início do arquivo, após a criação do webhook
+if (!verificarWebhook()) {
+  console.warn("⚠️ Webhook de itens ilegais não está configurado corretamente. Algumas funcionalidades podem não funcionar.");
 }
