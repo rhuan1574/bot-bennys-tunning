@@ -288,9 +288,6 @@ const tipoItens = [
 let description;
 
 const { TIMEOUTS, ROLES, CHANNELS } = require('../constants/items');
-const WebhookManager = require('../utils/webhooks');
-const DatabaseManager = require('../utils/database');
-const UIComponents = require('../utils/uiComponents');
 
 // Caminho para o arquivo JSON que armazenará os canais criados
 const CHANNELS_FILE = path.resolve(__dirname, "channels.json");
