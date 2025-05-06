@@ -1,16 +1,10 @@
 require('dotenv').config();
 
-
- // Carregar as variáveis de ambiente antes de usar o token
-
+// Carregar as variáveis de ambiente antes de usar o token
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Events, GatewayIntentBits, Collection } = require('discord.js');
 const { token } = require("./config.json");
-const connectToDatabase = require("./database/connect");
-
-connectToDatabase(); // Conectar ao banco ao iniciar o bot
-
 
 const client = new Client({
     intents: [
