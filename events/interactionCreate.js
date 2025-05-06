@@ -57,24 +57,16 @@ function saveData(data) {
   }
 }
 
-const {
-  webhookReciboId,
-  webhookReciboToken,
-  webhookLogReciboId,
-  webhookLogReciboToken,
-  webhookLogRegistroId,
-  webhookLogRegistroToken,
-  webhookLogReciboIlegalId,
-  webhookLogReciboIlegalToken,
-} = require("../config.json");
 const webhookClientRecibo = new WebhookClient({
   id: webhookReciboId,
   token: webhookReciboToken,
 });
+
 const webhookClientLog = new WebhookClient({
   id: webhookLogReciboId,
   token: webhookLogReciboToken,
 });
+
 const webhookClientRegistro = new WebhookClient({
   id: webhookLogRegistroId,
   token: webhookLogRegistroToken,
