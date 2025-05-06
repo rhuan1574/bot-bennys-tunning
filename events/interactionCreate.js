@@ -15,11 +15,51 @@ const {
 } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
-const ItemIlegal = require("../database/itemlegal"); // Importa o modelo
 const {
   webhookReciboId,
   webhookReciboToken,
   tagMembers,
+  webhookLogReciboId,
+  webhookLogReciboToken,
+  webhookLogRegistroId,
+  webhookLogRegistroToken,
+  webhookLogReciboIlegalId,
+  webhookLogReciboIlegalToken,
+} = require("../config.json");
+
+// Sistema de armazenamento local
+const DATA_FILE = path.join(__dirname, '../data/items.json');
+
+// Função para carregar dados
+function loadData() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const data = fs.readFileSync(DATA_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+    return { items: [] };
+  } catch (error) {
+    console.error('Erro ao carregar dados:', error);
+    return { items: [] };
+  }
+}
+
+// Função para salvar dados
+function saveData(data) {
+  try {
+    const dir = path.dirname(DATA_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Erro ao salvar dados:', error);
+  }
+}
+
+const {
+  webhookReciboId,
+  webhookReciboToken,
   webhookLogReciboId,
   webhookLogReciboToken,
   webhookLogRegistroId,
@@ -1214,18 +1254,23 @@ function validateModalInputs(modalResponse) {
 }
 
 async function saveItemsToDatabase(selectedItems, quantidade, tipo, interaction) {
-  const items = selectedItems.map(value => 
-    itensIlegais.find(item => item.value === value)
-  ).filter(Boolean);
-
-  await Promise.all(items.map(item =>
-    new ItemIlegal({
+  const data = loadData();
+  const newItems = selectedItems.map(value => {
+    const item = itensIlegais.find(i => i.value === value);
+    return {
+      id: Date.now().toString(),
       userId: interaction.user.id,
+      userName: interaction.user.tag,
       item: item.label,
       quantidade,
       tipo,
-    }).save()
-  ));
+      timestamp: new Date().toISOString()
+    };
+  });
+  
+  data.items.push(...newItems);
+  saveData(data);
+  return newItems;
 }
 
 function createItemsEmbed(selectedItems) {
