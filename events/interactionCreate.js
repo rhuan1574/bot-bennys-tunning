@@ -679,7 +679,7 @@ module.exports = {
                 const attachment = message.attachments.first();
                 if (attachment) {
                   const receiptEmbed = new EmbedBuilder()
-                    .setTitle("Comprovante gerado com sucesso!!!")
+                    .setTitle("Comprovante gerado com sucesso!")
                     .setDescription(`Serviços realizados:\n${servicesDescription}`)
                     .setImage(attachment.url)
                     .setFooter({
