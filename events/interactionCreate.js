@@ -649,10 +649,17 @@ const {
                   .setDescription(servicesDescription)
                   .setColor("#0099ff");
   
-                await i.update({
-                  embeds: [updatedEmbed],
-                  components: rows
-                });
+                // Atualiza botão de confirmação
+                const updatedRows = updateTunagemComponents(selectedServices, rows);
+
+                try {
+                  await i.update({
+                    embeds: [updatedEmbed],
+                    components: updatedRows
+                  });
+                } catch (err) {
+                  console.error("Erro ao atualizar interação do menu:", err);
+                }
               }
   
               if (i.customId === "confirmar") {
@@ -708,19 +715,16 @@ const {
                   }
                 });
   
-                imageCollector.on("end", (collected) => {
-                  if (collected.size === 0) {
-                    if (interaction.replied || interaction.deferred) {
-                      interaction.followUp({
-                        content: "Tempo esgotado! Nenhuma imagem foi enviada.",
-                        flags: 64
-                      });
-                    } else {
-                      interaction.reply({
-                        content: "Tempo esgotado! Nenhuma imagem foi enviada.",
-                        flags: 64
-                      });
-                    }
+                imageCollector.on("end", async () => {
+                  try {
+                    // Desabilita todos os componentes
+                    rows.forEach(row => row.components.forEach(comp => comp.setDisabled(true)));
+                    await interaction.editReply({
+                      content: "⏳ Tempo esgotado! Por favor, tente novamente.",
+                      components: rows
+                    });
+                  } catch (err) {
+                    console.error("Erro ao desabilitar componentes após timeout:", err);
                   }
                 });
               }
@@ -1327,5 +1331,14 @@ const {
       rows[0], // Mantém o menu de seleção
       new ActionRowBuilder().addComponents(confirmButton)
     ];
+  }
+  
+  // Função auxiliar para atualizar componentes do menu de tunagem
+  function updateTunagemComponents(selectedServices, rows) {
+    // Habilita o botão só se houver seleção
+    if (rows[1] && rows[1].components[0]) {
+      rows[1].components[0].setDisabled(selectedServices.length === 0);
+    }
+    return rows;
   }
   
