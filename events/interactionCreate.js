@@ -649,10 +649,14 @@ const {
                   .setDescription(servicesDescription)
                   .setColor("#0099ff");
   
-                await i.update({
-                  embeds: [updatedEmbed],
-                  components: rows
-                });
+                try {
+                  await i.update({
+                    embeds: [updatedEmbed],
+                    components: rows
+                  });
+                } catch (err) {
+                  console.error("Erro ao atualizar interação do menu:", err);
+                }
               }
   
               if (i.customId === "confirmar") {
