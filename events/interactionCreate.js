@@ -649,14 +649,10 @@ const {
                   .setDescription(servicesDescription)
                   .setColor("#0099ff");
   
-                try {
-                  await i.update({
-                    embeds: [updatedEmbed],
-                    components: rows
-                  });
-                } catch (err) {
-                  console.error("Erro ao atualizar interação do menu:", err);
-                }
+                await i.update({
+                  embeds: [updatedEmbed],
+                  components: rows
+                });
               }
   
               if (i.customId === "confirmar") {
@@ -732,18 +728,21 @@ const {
   
           } catch (error) {
             console.error("Erro no processamento do recibo:", error);
-            if (!interaction.replied && !interaction.deferred) {
-              try {
+            try {
+              if (interaction.replied || interaction.deferred) {
+                await interaction.followUp({
+                  content: "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
+                  flags: 64
+                });
+              } else {
                 await interaction.reply({
                   content: "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
                   flags: 64
                 });
-              } catch (err) {
-                console.error("Falha ao enviar mensagem de erro:", err);
               }
-            } else {
-              // Não tente followUp, apenas logue
-              console.error("A interação já foi respondida, não é possível enviar mensagem de erro.");
+            } catch (err) {
+              // Se der erro aqui, apenas logue para evitar crash
+              console.error("Falha ao enviar mensagem de erro:", err);
             }
           }
         }
