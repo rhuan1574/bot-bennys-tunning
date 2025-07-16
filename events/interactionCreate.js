@@ -733,8 +733,8 @@ const {
                     });
   
                     await Promise.all([
-                      webhookClientRecibo.send({content: `👤Comprovante Gerado por ${interaction.user} (${interaction.user.tag}):`, embeds: [receiptEmbed] }),
-                      webhookClientLog.send({ embeds: [receiptEmbed] })
+                      webhookClientRecibo.send({ embeds: [receiptEmbed] }),
+                      webhookClientLog.send({content: `👤Comprovante Gerado por ${interaction.user} (${interaction.user.tag}):`, embeds: [receiptEmbed] })
                     ]);
   
                     setTimeout(() => {
