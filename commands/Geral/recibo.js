@@ -6,6 +6,12 @@ module.exports = {
         .setName('recibo') // Nome do comando em minúsculas
         .setDescription('Comando para startar bot de registro'),
     async execute(interaction) {
+        if (!interaction.member.permissions.has("ADMINISTRATOR")) {
+            return interaction.reply({
+                content: "Você não tem permissão para usar este comando.",
+                ephemeral: true,
+            });
+        }  
         const embed = new EmbedBuilder()
             .setColor('Aqua')
             .setAuthor({ name: 'BENNYS TUNNING' }) // Corrigido o método setAuthor

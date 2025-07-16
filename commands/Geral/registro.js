@@ -6,6 +6,12 @@ module.exports = {
     .setName('registro')
     .setDescription('Comando utilizado para disparar uma embed de registro.'),
     async execute(interaction) {
+        if (!interaction.member.permissions.has("ADMINISTRATOR")) {
+            return interaction.reply({
+                content: "Você não tem permissão para usar este comando.",
+                ephemeral: true,
+            });
+        }
         const embed = new EmbedBuilder()
         .setTitle('Registro Automático')
         .setDescription('Bem vindo ao sistema de registro automático da Bennys Tunnins, para se registrar corretamente, clique no botão abaixo e siga os pasos a seguir.')
