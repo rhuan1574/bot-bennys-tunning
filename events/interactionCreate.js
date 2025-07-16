@@ -713,6 +713,11 @@ const {
                     const receiptEmbed = new EmbedBuilder()
                       .setTitle("Comprovante gerado com sucesso!!!")
                       .setDescription(`Serviços realizados:\n${servicesDescription}`)
+                      .setFields(
+                        [
+                          { name: '👤 Usuário', value: `${interaction.user} (${interaction.user.tag})`, inline: true },
+                        ]
+                      )
                       .setImage(attachment.url)
                       .setFooter({
                         text: `Gerado por ${interaction.user.tag}`,
