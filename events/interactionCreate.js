@@ -663,15 +663,34 @@ const {
               }
   
               if (i.customId === "confirmar") {
+                if (!selectedServices || selectedServices.length === 0) {
+                  try {
+                    await i.reply({
+                      content: "❌ Você precisa selecionar pelo menos um serviço antes de confirmar.",
+                      ephemeral: true
+                    });
+                  } catch (err) {
+                    console.error("Erro ao avisar sobre seleção vazia:", err);
+                  }
+                  return; // Bloqueia o fluxo
+                }
+                const desc = servicesDescription && servicesDescription.trim().length > 0
+                  ? servicesDescription
+                  : "Nenhum serviço selecionado.";
+
                 const confirmEmbed = new EmbedBuilder()
                   .setTitle("Recibo Confirmado!")
-                  .setDescription(`Serviços confirmados:\n${servicesDescription}\n\nAgora, envie uma imagem de comprovante neste canal. Você tem 2 minutos.`)
+                  .setDescription(`Serviços confirmados:\n${desc}\n\nAgora, envie uma imagem de comprovante neste canal. Você tem 2 minutos.`)
                   .setColor("#00ff00");
-  
-                await i.update({
-                  embeds: [confirmEmbed],
-                  components: []
-                });
+
+                try {
+                  await i.update({
+                    embeds: [confirmEmbed],
+                    components: []
+                  });
+                } catch (err) {
+                  console.error("Erro ao atualizar interação de confirmação:", err);
+                }
   
                 const imageFilter = (m) => 
                   m.author.id === interaction.user.id && 
