@@ -645,7 +645,7 @@ const {
                   .join("\n");
   
                 const updatedEmbed = new EmbedBuilder()
-                .setTitle("Confirme se as opções estão corretas acima, caso esteja, pressione o botão abaixo.")
+                .setTitle("Confirme se as opções estão corretas, caso esteja, pressione o botão abaixo para confirmar.")
                   .setFields([
                     {
                       name: "Serviços Selecionados",
