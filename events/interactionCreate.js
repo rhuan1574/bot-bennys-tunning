@@ -645,7 +645,6 @@ const {
                   .join("\n");
   
                 const updatedEmbed = new EmbedBuilder()
-                  .setTitle("Serviços Selecionados")
                   .setFields([
                     {
                       name: "Serviços Selecionados",
