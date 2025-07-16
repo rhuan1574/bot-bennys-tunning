@@ -733,7 +733,7 @@ const {
                     });
   
                     await Promise.all([
-                      webhookClientRecibo.send({ embeds: [receiptEmbed] }),
+                      webhookClientRecibo.send({content: `👤Comprovante Gerado por:`, embeds: [receiptEmbed] }),
                       webhookClientLog.send({ embeds: [receiptEmbed] })
                     ]);
   
