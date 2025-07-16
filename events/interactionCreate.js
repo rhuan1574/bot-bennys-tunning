@@ -645,6 +645,7 @@ const {
                   .join("\n");
   
                 const updatedEmbed = new EmbedBuilder()
+                .setTitle("Confirme se as opções estão corretas acima, caso esteja, pressione o botão abaixo.")
                   .setFields([
                     {
                       name: "Serviços Selecionados",
@@ -652,7 +653,6 @@ const {
                       inline: false
                     }
                   ])
-                  .setDescription("Confirme se as opções estão corretas acima, caso esteja, pressione o botão abaixo.")
                   .setColor("#0099ff");
   
                 // Atualiza botão de confirmação
