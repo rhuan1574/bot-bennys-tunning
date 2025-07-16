@@ -646,7 +646,8 @@ const {
   
                 const updatedEmbed = new EmbedBuilder()
                   .setTitle("Serviços Selecionados")
-                  .setDescription(servicesDescription)
+                  .setFields(servicesDescription)
+                  .setDescription("Confirme se as opções estão corretas acima, caso esteja, pressione o botão abaixo.")
                   .setColor("#0099ff");
   
                 // Atualiza botão de confirmação
