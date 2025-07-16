@@ -715,7 +715,7 @@ const {
                       .setDescription(`Serviços realizados:\n${servicesDescription}`)
                       .setFields(
                         [
-                          { name: '👤 Usuário', value: `${interaction.user} (${interaction.user.tag})`, inline: true },
+                          { name: '👤 Gerado por', value: `${interaction.user} (${interaction.user.tag})`, inline: true },
                         ]
                       )
                       .setImage(attachment.url)
